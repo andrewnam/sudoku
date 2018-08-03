@@ -12,8 +12,8 @@ class Board:
         self.dim_x = dim_x
         self.dim_y = dim_y
         self.max_digit = self.dim_x * self.dim_y
-        self.board = np.zeros((self.dim_x**2, self.dim_y**2), dtype=np.int8)
-        self.pencilMarks = np.ones((self.dim_x**2, self.dim_y**2, self.max_digit), dtype=np.int8)
+        self.board = np.zeros((self.max_digit, self.max_digit), dtype=np.int8)
+        self.pencilMarks = np.ones((self.max_digit, self.max_digit, self.max_digit), dtype=np.int8)
 
     def __repr__(self):
         return self.board.__repr__()
@@ -24,18 +24,15 @@ class Board:
         board.pencilMarks = np.array(self.pencilMarks)
         return board
 
+    def all_filled(self):
+        return np.sum(self.board == 0) == 0
+
     def is_solvable(self):
         """
         Checks if the board has any unfilled cells that have no candidates
         :return: boolean
         """
-        # A cell is empty and it has no candidate pencil marks
-        print("Checking solvability")
-        print(self.pencilMarks)
-        print(self.pencilMarks, xis=)f
-        print((np.sum(self.pencilMarks, axis=2) == 0))
-        print((self.board == 0))
-        return np.any((self.board == 0) & (np.sum(self.pencilMarks, axis=2) == 0))
+        return not np.any((self.board == 0) & (np.sum(self.pencilMarks, axis=2) == 0))
 
     def count_filled_cells(self):
         return np.sum(self.board != 0)
@@ -52,18 +49,6 @@ class Board:
         return np.nonzero(self.pencilMarks[x][y])[0] + 1
 
     def write(self, x, y, digit):
-        # digit = int(digit)
-        # if digit not in self.pencilMarks[x][y]:
-        #     print(digit)
-        #     print(self.board)
-        #     print(self.pencilMarks[x][y])
-        # print(x, y, digit)
-        # print(self.pencilMarks)
-        # print(self.pencilMarks[x])
-        print(self.pencilMarks[x][y])
-        # print(self.pencilMarks[x][y][digit])
-        # print(bool(self.pencilMarks[x][y][digit]))
-
         assert bool(self.pencilMarks[x][y][digit-1])
         self.board[x][y] = digit
         self.pencilMarks[x, y, :] = 0
