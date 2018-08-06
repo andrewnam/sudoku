@@ -2,6 +2,7 @@ from cell import Cell
 
 import numpy as np
 import random
+import joblib
 
 np.random.seed(0)
 
@@ -17,6 +18,18 @@ class Board:
 
     def __repr__(self):
         return self.board.__repr__()
+
+    def __hash__(self):
+        return joblib.hash((self.board, self.pencilMarks))
+
+    def boardHash(self):
+        return joblib.hash(self.board)
+
+    def __eq__(self, other):
+        return self.__hash__() == other.__hash__()
+
+    def boardEq(self, other):
+        return self.boardHash() == other.boardHash()
 
     def copy(self):
         board = Board(self.dim_x, self.dim_y)
@@ -64,29 +77,43 @@ class Board:
 
     def find_digit_in_column(self, x, digit):
         y = np.where(self.board[x] == digit)[0]
-        return Cell(x, y[0], digit) if len(y) > 0 else -1
+        return Cell(x, y[0], digit) if len(y) > 0 else None
 
-    def findDigitInRow(self, y, digit):
+    def find_digit_in_row(self, y, digit):
         x = np.where(self.board[:, y] == digit)[0]
-        return Cell(x[0], y, digit) if len(x) > 0 else -1
+        return Cell(x[0], y, digit) if len(x) > 0 else None
 
-    def findDigitInBox(self, x, y, digit):
+    def find_digit_in_box(self, x, y, digit):
         box_x_min = self.dim_x * (x // self.dim_x)
         box_x_max = box_x_min + self.dim_x
         box_y_min = self.dim_y * (y // self.dim_y)
         box_y_max = box_y_min + self.dim_y
         offset_x, offset_y = np.where(self.board[box_x_min:box_x_max, box_y_min:box_y_max] == digit)
-        return Cell(box_x_min + offset_x[0], box_y_min + offset_y[0], digit) if len(offset_x) > 0 else -1
+        return Cell(box_x_min + offset_x[0], box_y_min + offset_y[0], digit) if len(offset_x) > 0 else None
 
-    def findContradictions(self, x, y, digit):
+    def find_contradictions(self, x, y, digit):
         """
         Given a board, x, y and a digit that is not legal at x, y,
         returns a list of Marks in its row, column, and/or family
         that contributes to its contradiction
         """
         return [self.find_digit_in_column(self, x, digit),
-                self.findDigitInRow(self, y, digit),
-                self.findDigitInBox(self, x, y, digit)]
+                self.find_digit_in_row(self, y, digit),
+                self.find_digit_in_box(self, x, y, digit)]
+
+    def remove(self, x, y):
+        """
+        Removes the existing digit from the board at (x, y). Fills pencil-marks based on
+        :param x:
+        :param y:
+        :return: digit removed from cell
+        """
+        digit = self.board[x][y]
+        assert digit > 0
+        for i in range(1, self.max_digit + 1):
+            if not [1 for cell in self.find_contradictions(x, y, digit) if cell]: # no contradictions found
+                self.pencilMarks[x][y][i] = 1
+        return digit
 
     def seekNS(self, pencilMarks):
         xs, ys = np.where(self.board == 0)
