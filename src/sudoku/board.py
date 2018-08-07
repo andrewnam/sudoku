@@ -20,16 +20,10 @@ class Board:
         return self.board.__repr__()
 
     def __hash__(self):
-        return joblib.hash((self.board, self.pencilMarks))
-
-    def boardHash(self):
-        return joblib.hash(self.board)
+        return joblib.hash(self.board).__hash__()
 
     def __eq__(self, other):
         return self.__hash__() == other.__hash__()
-
-    def boardEq(self, other):
-        return self.boardHash() == other.boardHash()
 
     def copy(self):
         board = Board(self.dim_x, self.dim_y)
@@ -97,23 +91,25 @@ class Board:
         returns a list of Marks in its row, column, and/or family
         that contributes to its contradiction
         """
-        return [self.find_digit_in_column(self, x, digit),
-                self.find_digit_in_row(self, y, digit),
-                self.find_digit_in_box(self, x, y, digit)]
+        return [self.find_digit_in_column(x, digit),
+                self.find_digit_in_row(y, digit),
+                self.find_digit_in_box(x, y, digit)]
 
-    def remove(self, x, y):
+    def remove(self, x, y, in_place=False):
         """
         Removes the existing digit from the board at (x, y). Fills pencil-marks based on
         :param x:
         :param y:
         :return: digit removed from cell
         """
-        digit = self.board[x][y]
+        board = self if in_place else self.copy()
+        digit = board.board[x][y]
         assert digit > 0
-        for i in range(1, self.max_digit + 1):
-            if not [1 for cell in self.find_contradictions(x, y, digit) if cell]: # no contradictions found
-                self.pencilMarks[x][y][i] = 1
-        return digit
+        board.board[x][y] = 0
+        for i in range(board.max_digit):
+            if not [1 for cell in board.find_contradictions(x, y, i+1) if cell]: # no contradictions found
+                board.pencilMarks[x][y][i] = 1
+        return None if in_place else board
 
     def seekNS(self, pencilMarks):
         xs, ys = np.where(self.board == 0)
