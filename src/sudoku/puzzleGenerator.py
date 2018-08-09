@@ -117,7 +117,7 @@ if __name__ == '__main__':
 
     new_puzzles = []
     for puzzle in list(puzzles.keys()):
-        new_puzzles += remove_cell(puzzle, solutions)
+        new_puzzles += remove_cell(puzzle, solutions, 4)
         solutions.save('solutions4.txt')
         print(len(new_puzzles))
     # new_puzzles = [item for sublist in new_puzzles for item in sublist]
