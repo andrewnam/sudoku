@@ -100,25 +100,25 @@ def find_all_solutions(board: Board, solutions: dict) -> set:
 
 
 if __name__ == '__main__':
-    solutions = Solutions()
-    board = Board(2, 2)
-    for i in range(4):
-        board.write(0, i, i+1)
+    # solutions = Solutions()
+    # board = Board(2, 2)
+    # for i in range(4):
+    #     board.write(0, i, i+1)
+    #
+    # find_all_solutions(board, solutions)
+    # puzzles = {board: solutions[board] for board in solutions if solutions[board]}
+    # print(len(puzzles))
+    # print(len(set(list(puzzles.values()))))
+    # print(np.min([board.count_filled_cells() for board in puzzles]))
+    # solutions.save('solutions.txt')
 
-    find_all_solutions(board, solutions)
-    puzzles = {board: solutions[board] for board in solutions if solutions[board]}
-    print(len(puzzles))
-    print(len(set(list(puzzles.values()))))
-    print(np.min([board.count_filled_cells() for board in puzzles]))
-    solutions.save('solutions.txt')
-
-    # solutions = Solutions().load('solutions2.txt')
+    solutions = Solutions().load('solutions3.txt')
     puzzles = {board: solutions[board] for board in solutions if solutions[board]}
 
     new_puzzles = []
     for puzzle in list(puzzles.keys()):
         new_puzzles += remove_cell(puzzle, solutions)
-        solutions.save('solutions2.txt')
+        solutions.save('solutions4.txt')
         print(len(new_puzzles))
     # new_puzzles = [item for sublist in new_puzzles for item in sublist]
     # print(np.min([board.count_filled_cells() for board in new_puzzles]))
