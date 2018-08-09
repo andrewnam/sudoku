@@ -1,6 +1,7 @@
 from board import Board
-import numpy as np
+from solutions import Solutions
 
+import numpy as np
 import random
 random.seed(0)
 np.random.seed(0)
@@ -34,15 +35,8 @@ def write(board):
                 return next_board
     return None
 
-"""
-Puzzle generator:
-Start with a completed board.
-Given a valid board (solvable to a unique solution), remove a random cell.
-    Attempt to solve the board by trying every remaining legal digits in that cell. If any lead to a solution, backtrack
-    but also save the new resultant puzzle. This way, starting with one board can result in many similar games and
-    puzzles.
-"""
-def remove_cell(board: Board, solutions: dict, num_new_puzzles: int):
+
+def remove_cell(board: Board, solutions: dict, cells_to_remove: int=0):
     """
     Given a board with a unique solution and a dictionary of board-hash -> solution-board-hash, remove a random cell
      from the board and test if the resulting board also has a unique solution (every legal move also results boards
@@ -50,22 +44,37 @@ def remove_cell(board: Board, solutions: dict, num_new_puzzles: int):
     If no board with a unique solution can be created, returns None
     :param board:
     :param unique_solutions:
+    :param cells_to_remove:
     :return:
     """
     assert board in solutions
-    new_puzzles_generated = 0
+    assert cells_to_remove >= 0
+    new_puzzles = []
     xs, ys = np.nonzero(board.board)
     indices = np.arange(len(xs))
     np.random.shuffle(indices)
     for i in indices:
         x, y = xs[i], ys[i]
         new_board = board.remove(x, y)
-    return None
+        if new_board in solutions: # if this puzzle already exists, skip
+            pass
+        if len(find_all_solutions(new_board, solutions)) == 1:
+            new_puzzles.append(new_board)
+            if cells_to_remove and len(new_puzzles) >= cells_to_remove:
+                return new_puzzles
+    return new_puzzles
+
 
 def find_all_solutions(board: Board, solutions: dict) -> set:
+    """
+    Returns a set of Boards that contain all possible solutions to the input board
+    :param board:
+    :param solutions: dictionary of board K -> board V where V is the solution to K. V may be None
+    :return: set of Boards
+    """
     puzzles = {board: solutions[board] for board in solutions if solutions[board]}
-    if puzzles:
-        print(len(set(list(puzzles.values()))))
+    # if puzzles:
+    #     print(len(set(list(puzzles.values()))))
     if board in solutions:
         return {solutions[board]}
 
@@ -91,20 +100,25 @@ def find_all_solutions(board: Board, solutions: dict) -> set:
 
 
 if __name__ == '__main__':
-    solutions = {}
-    # board = Board(2, 2)
-    # board.write(0, 0, 1)
-    # board.write(0, 1, 2)
-    # board.write(0, 2, 3)
-
-    board = Board(3, 3)
-    for i in range(9):
+    solutions = Solutions()
+    board = Board(2, 2)
+    for i in range(4):
         board.write(0, i, i+1)
-    # board.write(0, 1, 2)
-    # board.write(0, 2, 3)
 
     find_all_solutions(board, solutions)
     puzzles = {board: solutions[board] for board in solutions if solutions[board]}
     print(len(puzzles))
     print(len(set(list(puzzles.values()))))
     print(np.min([board.count_filled_cells() for board in puzzles]))
+    solutions.save('solutions.txt')
+
+    # solutions = Solutions().load('solutions2.txt')
+    puzzles = {board: solutions[board] for board in solutions if solutions[board]}
+
+    new_puzzles = []
+    for puzzle in list(puzzles.keys()):
+        new_puzzles += remove_cell(puzzle, solutions)
+        solutions.save('solutions2.txt')
+        print(len(new_puzzles))
+    # new_puzzles = [item for sublist in new_puzzles for item in sublist]
+    # print(np.min([board.count_filled_cells() for board in new_puzzles]))

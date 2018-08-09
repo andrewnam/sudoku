@@ -3,6 +3,7 @@ from cell import Cell
 import numpy as np
 import random
 import joblib
+import re
 
 np.random.seed(0)
 
@@ -31,6 +32,20 @@ class Board:
         board.pencilMarks = np.array(self.pencilMarks)
         return board
 
+    def stringify(self):
+        return "{0}.{1}.{2}".format(self.dim_x, self.dim_y,
+                                    re.sub('[^0-9]', '', np.array_str(self.board)))
+
+    @staticmethod
+    def loadFromString(s: str):
+        dim_x, dim_y, digits = s.split('.')
+        board = Board(int(dim_x), int(dim_y))
+        board.board = (np.fromstring(digits, dtype=np.int8, sep='') - 48)\
+            .reshape((board.max_digit, board.max_digit))
+        board.resetPencilMarks()
+        return board
+
+
     def all_filled(self):
         return np.sum(self.board == 0) == 0
 
@@ -55,9 +70,8 @@ class Board:
     def get_possible_digits(self, x, y):
         return np.nonzero(self.pencilMarks[x][y])[0] + 1
 
-    def write(self, x, y, digit):
-        assert bool(self.pencilMarks[x][y][digit-1])
-        self.board[x][y] = digit
+    def setPencilMarks(self, x, y):
+        digit = self.board[x][y]
         self.pencilMarks[x, y, :] = 0
         self.pencilMarks[x, :, digit - 1] = 0
         self.pencilMarks[:, y, digit - 1] = 0
@@ -67,7 +81,24 @@ class Board:
         box_y_min = self.dim_y * (y // self.dim_y)
         box_y_max = box_y_min + self.dim_y
 
-        self.pencilMarks[box_x_min:box_x_max, box_y_min:box_y_max, digit-1] = 0
+        self.pencilMarks[box_x_min:box_x_max, box_y_min:box_y_max, digit - 1] = 0
+
+    def write(self, x, y, digit):
+        assert bool(self.pencilMarks[x][y][digit-1])
+        self.board[x][y] = digit
+        self.setPencilMarks(x, y)
+
+
+    def resetPencilMarks(self):
+        """
+        Evaluates the current board state and returns appropriate pencilMarks
+        Only useful when a board is newly loaded
+        :return:
+        """
+        self.pencilMarks = np.ones((self.max_digit, self.max_digit, self.max_digit))
+        xs, ys = np.nonzero(self.board)
+        for x, y in zip(xs, ys):
+            self.setPencilMarks(x, y)
 
     def find_digit_in_column(self, x, digit):
         y = np.where(self.board[x] == digit)[0]
@@ -130,16 +161,3 @@ class Board:
                 digit = possible_digits[0] + 1
                 marks.append(Cell(x, y, digit))
         return marks
-
-    def createPencilMarks(self):
-        """
-        Evaluates the current board state and returns appropriate pencilMarks
-        Only useful when a board is newly loaded
-        :return:
-        """
-        pencilMarks = np.ones((self.dim_x, self.dim_y, self.max_digit))
-        xs, ys = np.nonzero(self.board)
-        for x, y in zip(xs, ys):
-            digit = board[x][y]
-            board, pencilMarks = self.write(board, pencilMarks, x, y, digit)
-        return pencilMarks
