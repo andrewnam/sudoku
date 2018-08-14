@@ -62,6 +62,9 @@ class Board:
     def count_unfilled_cells(self):
         return np.sum(self.board == 0)
 
+    def is_seed(self) -> bool:
+        return (self.board[0] == np.arange(self.board.shape[1]) + 1).all()
+
     def get_cell_possibilities_count(self):
         possibilities = np.sum(self.pencilMarks, axis=2)
         xs, ys = np.nonzero(possibilities)
@@ -87,7 +90,6 @@ class Board:
         assert bool(self.pencilMarks[x][y][digit-1])
         self.board[x][y] = digit
         self.setPencilMarks(x, y)
-
 
     def resetPencilMarks(self):
         """
@@ -131,6 +133,7 @@ class Board:
         Removes the existing digit from the board at (x, y). Fills pencil-marks based on
         :param x:
         :param y:
+        :param in_place:
         :return: digit removed from cell
         """
         board = self if in_place else self.copy()
