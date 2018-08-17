@@ -4,6 +4,7 @@ import numpy as np
 import random
 import joblib
 import re
+import utils
 
 np.random.seed(0)
 
@@ -25,6 +26,9 @@ class Board:
 
     def __eq__(self, other):
         return self.__hash__() == other.__hash__()
+
+    def __getitem__(self, item):
+        return self.board.__getitem__(item)
 
     def copy(self):
         board = Board(self.dim_x, self.dim_y)
@@ -65,6 +69,12 @@ class Board:
     def is_seed(self) -> bool:
         return (self.board[0] == np.arange(self.board.shape[1]) + 1).all()
 
+    def get_boxes(self):
+        return np.array([self.board[x * self.dim_x:(x + 1) * self.dim_x,
+                         y * self.dim_y:(y + 1) * self.dim_y]
+                         for x, y
+                         in utils.get_combinations(np.arange(self.dim_x), np.arange(self.dim_y))])
+
     def get_cell_possibilities_count(self):
         possibilities = np.sum(self.pencilMarks, axis=2)
         xs, ys = np.nonzero(possibilities)
@@ -90,6 +100,11 @@ class Board:
         assert bool(self.pencilMarks[x][y][digit-1])
         self.board[x][y] = digit
         self.setPencilMarks(x, y)
+
+    def write_in_box(self, box_number, x, y, digit):
+        x = (box_number // self.dim_x) * self.dim_x + x
+        y = (box_number % self.dim_y) * self.dim_y + y
+        self.write(x, y, digit)
 
     def resetPencilMarks(self):
         """
