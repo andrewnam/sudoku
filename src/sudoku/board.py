@@ -8,6 +8,19 @@ import utils
 
 np.random.seed(0)
 
+class Box:
+
+    def __init__(self, board, x_min, y_min):
+        self.board = board
+        self.x_min = x_min
+        self.y_min = y_min
+
+        self.box = self.board[x_min:x_min + self.board.dim_x, y_min:y_min + self.board.dim_y]
+
+    def get_coordinates(self):
+        return utils.get_combinations(range(self.x_min, self.x_min + self.board.dim_x),
+                               range(self.y_min, self.y_min + self.board.dim_y))
+
 
 class Board:
 
@@ -17,6 +30,7 @@ class Board:
         self.max_digit = self.dim_x * self.dim_y
         self.board = np.zeros((self.max_digit, self.max_digit), dtype=np.int8)
         self.pencilMarks = np.ones((self.max_digit, self.max_digit, self.max_digit), dtype=np.int8)
+        self.boxes = {} # maps (box_x_min, box_y_min) to Box
 
     def __repr__(self):
         return self.board.__repr__()
@@ -69,11 +83,50 @@ class Board:
     def is_seed(self) -> bool:
         return (self.board[0] == np.arange(self.board.shape[1]) + 1).all()
 
-    def get_boxes(self):
-        return np.array([self.board[x * self.dim_x:(x + 1) * self.dim_x,
-                         y * self.dim_y:(y + 1) * self.dim_y]
-                         for x, y
-                         in utils.get_combinations(np.arange(self.dim_x), np.arange(self.dim_y))])
+    def is_candidate(self, x, y, digit):
+        return self.pencilMarks[x][y][digit-1] > 0
+
+    def get_box_boundaries_x(self, x):
+        """
+        :param x:
+        :return: X Boundaries of the box that x is in, [inclusive, exclusive)
+        """
+        x_min = (x // self.dim_x) * self.dim_x
+        return x_min, x_min + self.dim_x
+
+    def get_box_boundaries_y(self, y):
+        """
+        :param y:
+        :return: Y Boundaries of the box that y is in, [inclusive, exclusive)
+        """
+        y_min = (y // self.dim_y) * self.dim_y
+        return y_min, y_min + self.dim_y
+
+    def get_box(self, x, y):
+        box_x_min = self.get_box_boundaries_x(x)[0]
+        box_y_min = self.get_box_boundaries_y(y)[0]
+        key = (box_x_min, box_y_min)
+        if key not in self.boxes:
+            self.boxes[key] = Box(self, box_x_min, box_y_min)
+        return self.boxes[key]
+
+    # def get_box_index_by_coords(self, x, y):
+    #     return (x // self.dim_x) * self.dim_x + y // self.dim_y
+	#
+    # def get_box_by_index(self, index, copy=True):
+    #     x = (index // self.dim_x) * self.dim_x
+    #     y = (index % self.dim_y) * self.dim_y
+    #     arr = self[x:x + self.dim_x, y:y + self.dim_y]
+    #     return np.array(arr) if copy else arr
+	#
+    # def get_box_by_coords(self, x, y, copy=True):
+    #     return self.get_box_by_index(self.get_box_by_coords(x, y), copy)
+	#
+    # def get_boxes(self):
+    #     return np.array([self.board[x * self.dim_x:(x + 1) * self.dim_x,
+    #                      y * self.dim_y:(y + 1) * self.dim_y]
+    #                      for x, y
+    #                      in utils.get_combinations(np.arange(self.dim_x), np.arange(self.dim_y))])
 
     def get_cell_possibilities_count(self):
         possibilities = np.sum(self.pencilMarks, axis=2)
@@ -82,6 +135,9 @@ class Board:
 
     def get_possible_digits(self, x, y):
         return np.nonzero(self.pencilMarks[x][y])[0] + 1
+
+    def get_digit_pencilmarks(self, digit):
+        return self.pencilMarks[:, :, digit-1]
 
     def setPencilMarks(self, x, y):
         digit = self.board[x][y]
@@ -101,10 +157,10 @@ class Board:
         self.board[x][y] = digit
         self.setPencilMarks(x, y)
 
-    def write_in_box(self, box_number, x, y, digit):
-        x = (box_number // self.dim_x) * self.dim_x + x
-        y = (box_number % self.dim_y) * self.dim_y + y
-        self.write(x, y, digit)
+    # def write_in_box(self, box_number, x, y, digit):
+    #     x = (box_number // self.dim_x) * self.dim_x + x
+    #     y = (box_number % self.dim_y) * self.dim_y + y
+    #     self.write(x, y, digit)
 
     def resetPencilMarks(self):
         """
@@ -139,9 +195,10 @@ class Board:
         returns a list of Marks in its row, column, and/or family
         that contributes to its contradiction
         """
-        return [self.find_digit_in_column(x, digit),
-                self.find_digit_in_row(y, digit),
-                self.find_digit_in_box(x, y, digit)]
+        contradictions = [self.find_digit_in_column(x, digit),
+                          self.find_digit_in_row(y, digit),
+                          self.find_digit_in_box(x, y, digit)]
+        return [c for c in contradictions if c]
 
     def remove(self, x, y, in_place=False):
         """
@@ -155,9 +212,23 @@ class Board:
         digit = board.board[x][y]
         assert digit > 0
         board.board[x][y] = 0
+
+        box_coords = self.get_box(x, y).get_coordinates()
         for i in range(board.max_digit):
-            if not [1 for cell in board.find_contradictions(x, y, i+1) if cell]: # no contradictions found
+            # for cell at (x, y)
+            if not board.find_contradictions(x, y, i+1):
                 board.pencilMarks[x][y][i] = 1
+            # for row x
+            if i != x and board[i][y] == 0 and not board.find_contradictions(i, y, digit):
+                board.pencilMarks[i][y][digit - 1] = 1
+            # for column y
+            if i != y and board[x][i] == 0and not board.find_contradictions(x, i, digit):
+                board.pencilMarks[x][i][digit - 1] = 1
+            # for box
+            box_x, box_y = box_coords[i]
+            if box_x != x and box_y != y and board[box_x][box_y] == 0 and not board.find_contradictions(box_x, box_y, digit):
+                board.pencilMarks[box_x][box_y][digit - 1] = 1
+
         return None if in_place else board
 
     def seekNS(self, pencilMarks):
