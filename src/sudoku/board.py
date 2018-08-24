@@ -44,6 +44,13 @@ class Board:
     def __getitem__(self, item):
         return self.board.__getitem__(item)
 
+    @property
+    def T(self):
+        transpose = Board(self.dim_x, self.dim_y)
+        transpose.board = np.transpose(self.board)
+        transpose.pencilMarks = np.transpose(self.pencilMarks, (1, 0, 2))
+        return transpose
+
     def copy(self):
         board = Board(self.dim_x, self.dim_y)
         board.board = np.array(self.board)
