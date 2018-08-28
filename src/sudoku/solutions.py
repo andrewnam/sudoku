@@ -1,22 +1,28 @@
 from board import Board
 import random
+import numpy as np
 
 
 class Solutions:
 
     def __init__(self, solutions=None):
         self.solutions = {}
+        self.solution_boards = set()
+        self.seed_solutions = set()
+
         if solutions:
             self.solutions = solutions
 
-        self.refresh_seed_solutions()
+        self.refresh_solution_boards()
 
     def __setitem__(self, key: Board, item: Board):
         assert type(key) == Board
         assert (type(item) == Board and item.all_filled()) or item is None
         self.solutions[key] = item
         if item:
-            self.seed_solutions.add(item)
+            self.solution_boards.add(item)
+            if np.all(item[0] == np.arange(item.max_digit) + 1):
+                self.seed_solutions.add(item)
 
     def __getitem__(self, key):
         assert type(key) == Board
@@ -43,10 +49,10 @@ class Solutions:
     def items(self):
         return self.solutions.items()
 
-    def refresh_seed_solutions(self):
-        self.seed_solutions = set(self.solutions.values())
-        if None in self.seed_solutions:
-            self.seed_solutions.remove(None)
+    def refresh_solution_boards(self):
+        self.solution_boards = set(self.solutions.values())
+        if None in self.solution_boards:
+            self.solution_boards.remove(None)
 
     def save(self, filename):
         lines = []
@@ -77,7 +83,7 @@ class Solutions:
                 self.solutions[Board.loadFromString(k)] = None
             else:
                 self.solutions[Board.loadFromString(k)] = solution_boards[v]
-        self.refresh_seed_solutions()
+        self.refresh_solution_boards()
         return self
 
     def count_puzzles_per_solution(self):

@@ -39,10 +39,14 @@ class Board:
         return joblib.hash(self.board).__hash__()
 
     def __eq__(self, other):
-        return self.__hash__() == other.__hash__()
+        return np.all(self.board == other.board)
 
     def __getitem__(self, item):
         return self.board.__getitem__(item)
+
+    def __lt__(self, other):
+        assert type(other) == Board
+        return self.stringify() < other.stringify()
 
     @property
     def T(self):
