@@ -14,6 +14,7 @@ class Solutions:
             self.solutions = solutions
 
         self.refresh_solution_boards()
+        self.refresh_seed_solutions()
 
     def __setitem__(self, key: Board, item: Board):
         assert type(key) == Board
@@ -54,6 +55,9 @@ class Solutions:
         if None in self.solution_boards:
             self.solution_boards.remove(None)
 
+    def refresh_seed_solutions(self):
+        self.seed_solutions = {board for board in self.solutions.values() if board and board.is_seed()}
+
     def save(self, filename):
         lines = []
         for k, v in self.solutions.items():
@@ -84,16 +88,25 @@ class Solutions:
             else:
                 self.solutions[Board.loadFromString(k)] = solution_boards[v]
         self.refresh_solution_boards()
+        self.refresh_seed_solutions()
         return self
 
     def count_puzzles_per_solution(self):
         occurrences = {}
-        for k in [board for board in self.solutions.keys() if board.is_seed()]:
-            v = self.solutions[k]
+        for k, v in [(k, v) for k, v in self.solutions.items() if v and v.is_seed()]:
             if v not in occurrences:
                 occurrences[v] = 0
             occurrences[v] += 1
         return occurrences
 
-    def get_random_seed_solution(self):
+    def get_random_seed_solution(self, inverse_weight=False):
+        if inverse_weight:
+            seeds = list(self.seed_solutions)
+            weights = {k: 1/v for k, v in self.count_puzzles_per_solution().items()}
+            weight_list = np.array([weights[seeds[i]] for i in range(len(seeds))])
+            total_weight = np.sum(weight_list)
+            weight_list /= total_weight
+            randint = np.random.choice(np.arange(len(seeds)), p=weight_list)
+            return seeds[randint]
         return random.sample(self.seed_solutions, 1)[0]
+
