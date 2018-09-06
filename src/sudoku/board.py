@@ -168,11 +168,6 @@ class Board:
         self.board[x][y] = digit
         self.setPencilMarks(x, y)
 
-    # def write_in_box(self, box_number, x, y, digit):
-    #     x = (box_number // self.dim_x) * self.dim_x + x
-    #     y = (box_number % self.dim_y) * self.dim_y + y
-    #     self.write(x, y, digit)
-
     def resetPencilMarks(self):
         """
         Evaluates the current board state and returns appropriate pencilMarks

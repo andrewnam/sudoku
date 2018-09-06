@@ -1,12 +1,16 @@
 from board import Board
 import random
 import numpy as np
+from tqdm import tqdm
 
 
 class Solutions:
+    MEMORY_ONLY = "__MEMORY_ONLY__"
 
-    def __init__(self, solutions=None):
+    def __init__(self, filename, solutions=None):
         self.solutions = {}
+        self.filename = filename
+
         self.solution_boards = set()
         self.seed_solutions = set()
 
@@ -16,6 +20,11 @@ class Solutions:
         self.refresh_solution_boards()
         self.refresh_seed_solutions()
 
+        try:
+            self.load()
+        except:
+            pass
+
     def __setitem__(self, key: Board, item: Board):
         assert type(key) == Board
         assert (type(item) == Board and item.all_filled()) or item is None
@@ -24,6 +33,10 @@ class Solutions:
             self.solution_boards.add(item)
             if np.all(item[0] == np.arange(item.max_digit) + 1):
                 self.seed_solutions.add(item)
+
+        # Auto-save every 1000 entries
+        if len(self.solutions)%2500 == 0:
+            self.save()
 
     def __getitem__(self, key):
         assert type(key) == Board
@@ -58,7 +71,10 @@ class Solutions:
     def refresh_seed_solutions(self):
         self.seed_solutions = {board for board in self.solutions.values() if board and board.is_seed()}
 
-    def save(self, filename):
+    def save(self):
+        if self.filename is Solutions.MEMORY_ONLY:
+            return
+
         lines = []
         for k, v in self.solutions.items():
             k_str = k.stringify()
@@ -66,11 +82,14 @@ class Solutions:
             if v is not None:
                 v_str = v.stringify()
             lines.append(','.join([k_str, v_str]))
-        with open(filename, 'w') as f:
+        with open(self.filename, 'w') as f:
             f.write('\n'.join(lines))
 
-    def load(self, filename):
-        with open(filename) as f:
+    def load(self):
+        if self.filename is Solutions.MEMORY_ONLY:
+            return
+
+        with open(self.filename) as f:
             lines = f.read().splitlines()
 
         solution_boards = {}
@@ -110,3 +129,53 @@ class Solutions:
             return seeds[randint]
         return random.sample(self.seed_solutions, 1)[0]
 
+    def find_all_solutions(self, board: Board) -> set:
+        """
+        Returns a set of Boards that contain all possible solutions to the input board
+        :param board:
+        :param solutions: dictionary of board K -> board V where V is the solution to K. V may be None
+        :return: set of Boards
+        """
+        if board in self:
+            return {self[board]}
+
+        found_solutions = set()
+        possibilities = board.get_cell_possibilities_count()
+        min_possibilities = [coord for coord in possibilities if possibilities[coord] == min(possibilities.values())]
+        x, y = random.choice(min_possibilities)
+        for digit in board.get_possible_digits(x, y):
+            next_board = board.copy()
+            next_board.write(x, y, digit)
+            if next_board in self:
+                found_solutions.add(self[next_board])
+            elif next_board.all_filled():
+                self[next_board] = next_board
+                found_solutions.add(self[next_board])
+            if next_board.is_solvable():
+                found_solutions |= self.find_all_solutions(next_board)
+        if len(found_solutions) == 1:
+            self[board] = list(found_solutions)[0]
+        else:
+            self[board] = None
+        return found_solutions
+
+    def check_valid_boards(self):
+        violations = []
+        for board, sol in tqdm([(b, s) for b, s in self.items() if s]):
+            if sol and board != sol:
+                all_sols = list(Solutions(Solutions.MEMORY_ONLY).find_all_solutions(board))
+                if not len(all_sols) is 1 and all_sols[0] == sol:
+                    violations.append((board, all_sols))
+        return violations
+
+    def check_invalid_boards(self):
+        """
+        Checks that boards that map to no solution actually do not have a unique solution.
+        Takes much longer than checking for valid boards.
+        :return:
+        """
+        violations = []
+        for board, sol in tqdm([(b, s) for b, s in self.items() if not s]):
+            if not len(Solutions(Solutions.MEMORY_ONLY).find_all_solutions(board)) != 1:
+                violations.append((board, sol))
+        return violations
