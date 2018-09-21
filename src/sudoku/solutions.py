@@ -179,3 +179,13 @@ class Solutions:
             if not len(Solutions(Solutions.MEMORY_ONLY).find_all_solutions(board)) != 1:
                 violations.append((board, sol))
         return violations
+
+    def get_puzzles_by_hints(self):
+        puzzles = {}
+        for board, sol in self.solutions.items():
+            if sol and sol in self.seed_solutions:
+                hints = board.count_filled_cells()
+                if hints not in puzzles:
+                    puzzles[hints] = []
+                puzzles[hints].append(board)
+        return puzzles
