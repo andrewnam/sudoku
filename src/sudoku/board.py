@@ -74,6 +74,26 @@ class Board:
         board.resetPencilMarks()
         return board
 
+    @staticmethod
+    def shuffle_numbers(seed_board_string: str, number_orders):
+        max_digit = int(seed_board_string[0]) * int(seed_board_string[2])
+        digits = seed_board_string[4:]
+        assert np.all([int(digits[i]) == i + 1 or int(digits[i]) == 0 for i in range(max_digit)])  # check if seed
+        if type(number_orders) == str:
+            number_orders = [number_orders]
+
+        all_digits = {str(i) for i in range(1, max_digit + 1)}
+        shuffled_board_strings = []
+        for number_order in number_orders:
+            assert len(number_order) == max_digit
+            mapping = {str(i + 1): str(number_order[i]) for i in range(max_digit)}
+            assert set(mapping.values()) == all_digits
+            shuffled_board_string = seed_board_string[:4]
+            shuffled_board_string += ''.join([mapping[d] for d in digits])
+            shuffled_board_strings.append(shuffled_board_string)
+
+        return shuffled_board_strings
+
 
     def all_filled(self):
         return np.sum(self.board == 0) == 0
