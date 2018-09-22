@@ -89,7 +89,7 @@ class Board:
             mapping = {str(i + 1): str(number_order[i]) for i in range(max_digit)}
             assert set(mapping.values()) == all_digits
             shuffled_board_string = seed_board_string[:4]
-            shuffled_board_string += ''.join([mapping[d] for d in digits])
+            shuffled_board_string += ''.join([mapping[d] if d != '0' else '0' for d in digits])
             shuffled_board_strings.append(shuffled_board_string)
 
         return shuffled_board_strings
