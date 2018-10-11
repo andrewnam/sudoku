@@ -21,6 +21,9 @@ class Box:
         return utils.get_combinations(range(self.x_min, self.x_min + self.board.dim_x),
                                range(self.y_min, self.y_min + self.board.dim_y))
 
+    def __repr__(self):
+        return self.box.__repr__()
+
 
 class Board:
 
@@ -76,6 +79,16 @@ class Board:
 
     @staticmethod
     def shuffle_numbers(seed_board_string: str, number_orders):
+        """
+        Given a seed_board string and a string with the new order for top row of board, generates derivative board
+        :param seed_board_string: output of board.stringify()
+        :param number_orders: list of permuted strings of [1, max_digit]
+        :return: a list of board strings with given permutations
+
+        Example:
+        >>> Board.shuffle_numbers('2.2.0204030120400400', ['2143'])
+        ['2.2.0103040210300300']
+        """
         max_digit = int(seed_board_string[0]) * int(seed_board_string[2])
         digits = seed_board_string[4:]
         assert np.all([int(digits[i]) == i + 1 or int(digits[i]) == 0 for i in range(max_digit)])  # check if seed
@@ -144,11 +157,11 @@ class Board:
     # def get_box_index_by_coords(self, x, y):
     #     return (x // self.dim_x) * self.dim_x + y // self.dim_y
 	#
-    # def get_box_by_index(self, index, copy=True):
-    #     x = (index // self.dim_x) * self.dim_x
-    #     y = (index % self.dim_y) * self.dim_y
-    #     arr = self[x:x + self.dim_x, y:y + self.dim_y]
-    #     return np.array(arr) if copy else arr
+    def get_box_by_index(self, index):
+        x = (index // self.dim_x) * self.dim_x
+        y = (index % self.dim_y) * self.dim_y
+        return self.get_box(x, y)
+
 	#
     # def get_box_by_coords(self, x, y, copy=True):
     #     return self.get_box_by_index(self.get_box_by_coords(x, y), copy)
