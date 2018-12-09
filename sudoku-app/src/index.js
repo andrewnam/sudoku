@@ -7,6 +7,6 @@ import Board from './board/Board.js'
 // ========================================
 
 ReactDOM.render(
-  <Board dimX={2} dimY={2}/>,
+  <Board dimX={3} dimY={3}/>,
   document.getElementById('root')
 );

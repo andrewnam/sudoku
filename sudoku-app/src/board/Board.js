@@ -22,7 +22,7 @@ class Cell extends React.Component {
       );
     } else {
       return (
-        <button className={"cell-button"} onClick={() => this.props.board.cellOnClick()}>
+        <button className={"cell-button"} onClick={() => this.props.board.cellOnClick(this)}>
           {this.props.board.state.digits[this.props.x][this.props.y]}
         </button>
       );
@@ -46,6 +46,7 @@ class Board extends React.Component {
     this.setState((state, props) => {
       return {selectedCell: cell};
     });
+    console.log(cell.props.x, cell.props.y)
   }
 
   renderCell(x, y) {
