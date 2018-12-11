@@ -2,11 +2,14 @@ import React from 'react';
 import ReactDOM from 'react-dom';
 import './index.css';
 
-import Board from './board/Board.js'
+import Experiment from "./experiment/Experiment.tsx";
 
 // ========================================
 
+
+
 ReactDOM.render(
-  <Board dimX={3} dimY={3}/>,
+ // <Board dimX={3} dimY={3}/>,
+  <Experiment/>,
   document.getElementById('root')
 );
