@@ -1,5 +1,10 @@
+import './SudokuExperiment.css';
+
 import * as React from 'react';
+
 import WelcomeScreen from "./WelcomeScreen";
+
+import {Button} from 'primereact/button';
 
 class SudokuExperiment extends React.Component {
 
@@ -19,7 +24,14 @@ class SudokuExperiment extends React.Component {
 
   render() {
     return <div className={"SudokuExperiment"}>
-      {this.renderScreen()}
+      <div className={"screen"}>
+        {this.renderScreen()}
+      </div>
+
+
+      <div className={"next_button"}>
+        <Button label="Next" className="p-button-success" />
+      </div>
     </div>;
   }
 }
