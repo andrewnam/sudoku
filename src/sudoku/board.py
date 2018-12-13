@@ -21,6 +21,15 @@ class Box:
         return utils.get_combinations(range(self.x_min, self.x_min + self.board.dim_x),
                                range(self.y_min, self.y_min + self.board.dim_y))
 
+    def find_digit(self, digit):
+        x, y = np.where(self.box == digit)
+        if x.size > 0:
+            return Cell(self.x_min + x[0], self.y_min + y[0], digit)
+        return None
+
+    def __repr__(self):
+        return self.box.__repr__()
+
 
 class Board:
 
@@ -74,6 +83,36 @@ class Board:
         board.resetPencilMarks()
         return board
 
+    @staticmethod
+    def shuffle_numbers(seed_board_string: str, number_orders):
+        """
+        Given a seed_board string and a string with the new order for top row of board, generates derivative board
+        :param seed_board_string: output of board.stringify()
+        :param number_orders: list of permuted strings of [1, max_digit]
+        :return: a list of board strings with given permutations
+
+        Example:
+        >>> Board.shuffle_numbers('2.2.0204030120400400', ['2143'])
+        ['2.2.0103040210300300']
+        """
+        max_digit = int(seed_board_string[0]) * int(seed_board_string[2])
+        digits = seed_board_string[4:]
+        assert np.all([int(digits[i]) == i + 1 or int(digits[i]) == 0 for i in range(max_digit)])  # check if seed
+        if type(number_orders) == str:
+            number_orders = [number_orders]
+
+        all_digits = {str(i) for i in range(1, max_digit + 1)}
+        shuffled_board_strings = []
+        for number_order in number_orders:
+            assert len(number_order) == max_digit
+            mapping = {str(i + 1): str(number_order[i]) for i in range(max_digit)}
+            assert set(mapping.values()) == all_digits
+            shuffled_board_string = seed_board_string[:4]
+            shuffled_board_string += ''.join([mapping[d] if d != '0' else '0' for d in digits])
+            shuffled_board_strings.append(shuffled_board_string)
+
+        return shuffled_board_strings
+
 
     def all_filled(self):
         return np.sum(self.board == 0) == 0
@@ -124,11 +163,11 @@ class Board:
     # def get_box_index_by_coords(self, x, y):
     #     return (x // self.dim_x) * self.dim_x + y // self.dim_y
 	#
-    # def get_box_by_index(self, index, copy=True):
-    #     x = (index // self.dim_x) * self.dim_x
-    #     y = (index % self.dim_y) * self.dim_y
-    #     arr = self[x:x + self.dim_x, y:y + self.dim_y]
-    #     return np.array(arr) if copy else arr
+    def get_box_by_index(self, index):
+        x = (index // self.dim_x) * self.dim_x
+        y = (index % self.dim_y) * self.dim_y
+        return self.get_box(x, y)
+
 	#
     # def get_box_by_coords(self, x, y, copy=True):
     #     return self.get_box_by_index(self.get_box_by_coords(x, y), copy)
@@ -188,12 +227,10 @@ class Board:
         return Cell(x[0], y, digit) if len(x) > 0 else None
 
     def find_digit_in_box(self, x, y, digit):
-        box_x_min = self.dim_x * (x // self.dim_x)
-        box_x_max = box_x_min + self.dim_x
-        box_y_min = self.dim_y * (y // self.dim_y)
-        box_y_max = box_y_min + self.dim_y
-        offset_x, offset_y = np.where(self.board[box_x_min:box_x_max, box_y_min:box_y_max] == digit)
-        return Cell(box_x_min + offset_x[0], box_y_min + offset_y[0], digit) if len(offset_x) > 0 else None
+        return self.get_box(x, y).find_digit(digit)
+
+    def find_digit_in_box_by_index(self, i, digit):
+        return self.get_box_by_index(i).find_digit(digit)
 
     def find_contradictions(self, x, y, digit):
         """
