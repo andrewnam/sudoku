@@ -92,6 +92,12 @@ class GridString:
     def __repr__(self):
         return self.grid
 
+    def __eq__(self, other):
+        return (self.dim_x, self.dim_y, self.grid) == (other.dim_x, other.dim_y, other.grid)
+
+    def __hash__(self):
+        return (self.dim_x, self.dim_y, self.grid).__hash__()
+
 
 def read_solutions_file(filename):
     with open(filename) as f:
