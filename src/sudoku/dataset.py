@@ -23,19 +23,20 @@ class Dataset:
     def create_split_data(self):
         fractions = self.split_boundaries[0] < 1
 
-
         inputs = list(self.data)
         np.random.shuffle(inputs)
 
         split = []
         last_boundary = 0
-        for boundary in self.split_boundaries + [1]:
-            if fractions:
-                next_boundary = int(len(inputs) * boundary)
-            else:
-                next_boundary = boundary
-            split.append(inputs[last_boundary:next_boundary])
-            last_boundary = next_boundary
+
+        if fractions:
+            boundaries = [int(len(inputs) * boundary) for boundary in self.split_boundaries + [1]]
+        else:
+            boundaries = self.split_boundaries
+
+        for boundary in boundaries:
+            split.append(inputs[last_boundary:boundary])
+            last_boundary = boundary
         return split
 
     def get_input_data(self, index=None):

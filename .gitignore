@@ -1,6 +1,7 @@
 data/
 keys/
 node_modules/
+models/
 
 #OSX
 *.DS_Store
