@@ -228,7 +228,7 @@ class Board:
             if i != x and board[i][y] == 0 and not board.find_contradictions(i, y, digit):
                 board.pencilMarks[i][y][digit - 1] = 1
             # for column y
-            if i != y and board[x][i] == 0and not board.find_contradictions(x, i, digit):
+            if i != y and board[x][i] == 0 and not board.find_contradictions(x, i, digit):
                 board.pencilMarks[x][i][digit - 1] = 1
             # for box
             box_x, box_y = box_coords[i]

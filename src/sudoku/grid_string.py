@@ -98,6 +98,12 @@ class GridString:
     def __hash__(self):
         return (self.dim_x, self.dim_y, self.grid).__hash__()
 
+def write_solutions_file(filename, puzzles):
+    lines = []
+    for k, v in puzzles.items():
+        lines.append(','.join([k.grid_string, v.grid_string]))
+    with open(filename, 'w') as f:
+        f.write('\n'.join(lines))
 
 def read_solutions_file(filename):
     with open(filename) as f:
