@@ -24,7 +24,7 @@ def datetime_to_str(datetime):
     return datetime.strftime("%Y-%m-%d_%H:%M:%S")
 
 def print(s):
-    _print("{} {}".format(datetime_to_str(datetime.now()), s))
+    _print("({}) {}".format(datetime_to_str(datetime.now()), s))
 
 def count_model_parameters(model):
     return sum(p.numel() for p in model.parameters() if p.requires_grad)

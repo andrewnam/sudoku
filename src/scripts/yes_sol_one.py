@@ -11,7 +11,7 @@ from script_utils import train_rrn
 
 
 hyperparameters = {
-    'model_name': 'yes_sol1_at_(0.0)',
+    'model_name': 'yes_sol_one',
     'description': "Training the model on dataset with 1's at (0,0) in any of its solutions."
                    "Want to test if it can perform well on data with no 1's at (0, 0) in solutions.",
     'device': 8,

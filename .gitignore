@@ -2,6 +2,9 @@ data/
 keys/
 node_modules/
 rrn_data/
+checkpoints/
+data/
+logs/
 
 #OSX
 *.DS_Store

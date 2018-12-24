@@ -11,7 +11,7 @@ from script_utils import train_rrn
 
 
 hyperparameters = {
-    'model_name': 'no_1_at_(0.0)',
+    'model_name': 'no_one',
     'description': "Training the model on dataset with no 1's in any of its hints."
                    "Want to test if it can perform well on data with 1's in its hints.",
     'device': 3,

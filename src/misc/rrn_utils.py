@@ -9,6 +9,7 @@ import random
 from tqdm import tqdm
 from datetime import datetime
 import time
+import os
 import pickle
 
 import sys
@@ -24,6 +25,24 @@ random.seed(0)
 np.random.seed(0)
 torch.manual_seed(0)
 torch.set_default_tensor_type('torch.DoubleTensor')
+
+def get_puzzles_by_hints(shuffled_puzzles_filename, num_hints=None):
+    with open(shuffled_puzzles_filename) as f:
+        lines = f.read().splitlines()
+    all_puzzles = {}
+    for line in lines:
+        puzzle, solution = line.split(',')
+        all_puzzles[GridString(puzzle)] = GridString(solution)
+
+    puzzles_by_hints = {i: {} for i in range(4, 17)}
+    num_cells = 16
+    for p in all_puzzles:
+        hints = num_cells - p.grid.count('.')
+        puzzles_by_hints[hints][p] = all_puzzles[p]
+
+    if num_hints:
+        return puzzles_by_hints[num_hints]
+    return puzzles_by_hints
 
 
 def encode_input(grid_string: GridString):
@@ -49,14 +68,17 @@ def get_performance(model, x, y, num_iters=32):
     return loss, accuracies.cpu().data.numpy()
 
 def train_rrn(hyperparameters: dict, data: dict):
-    model_name = hyperparameters['model_name']
+    if not os.path.exists('./checkpoints'):
+        os.makedirs('./checkpoints')
+    if not os.path.exists('./logs'):
+        os.makedirs('./logs')
+
     device = hyperparameters['device']
     dim_x = hyperparameters['dim_x']
     dim_y = hyperparameters['dim_y']
     num_iters = hyperparameters['num_iters']
     train_size = hyperparameters['train_size']
     valid_size = hyperparameters['valid_size']
-    test_size = hyperparameters['test_size']
     batch_size = hyperparameters['batch_size']
     epochs = hyperparameters['epochs']
     save_epochs = hyperparameters['save_epochs']
@@ -69,15 +91,11 @@ def train_rrn(hyperparameters: dict, data: dict):
     train_outputs = data['train_outputs']
     valid_inputs = data['valid_inputs']
     valid_outputs = data['valid_outputs']
-    test_inputs = data['test_inputs']
-    test_outputs = data['test_outputs']
 
     all_train_x = torch.stack([encode_input(p) for p in train_inputs])
     all_train_y = torch.stack([encode_output(p) for p in train_outputs])
     all_valid_x = torch.stack([encode_input(p) for p in valid_inputs])
     all_valid_y = torch.stack([encode_output(p) for p in valid_outputs])
-    all_test_x = torch.stack([encode_input(p) for p in test_inputs])
-    all_test_y = torch.stack([encode_output(p) for p in test_outputs])
 
     model = RRN(dim_x=dim_x, dim_y=dim_y, embed_size=embed_size, hidden_layer_size=hidden_layer_size).cuda(device)
     optimizer = optim.Adam(model.parameters(), lr=learning_rate, weight_decay=weight_decay)
@@ -85,15 +103,13 @@ def train_rrn(hyperparameters: dict, data: dict):
     train_losses = []  # epoch x batch
     train_accuracies = []  # epoch x batch x grid x timestep
     valid_losses = []  # epoch x batch
-    valid_accuracies = []  # epoch x batch x grid x timestep
+    valid_accuracies = []  # epoch x grid x timestep
     times = []
 
     train_x = all_train_x[:train_size].cuda(device)
     train_y = all_train_y[:train_size].cuda(device)
     valid_x = all_valid_x[:valid_size].cuda(device)
     valid_y = all_valid_y[:valid_size].cuda(device)
-    test_x = all_test_x[:test_size].cuda(device)
-    test_y = all_test_y[:test_size].cuda(device)
 
     def closure():
         optimizer.zero_grad()
@@ -144,8 +160,8 @@ def train_rrn(hyperparameters: dict, data: dict):
             i, train_loss, valid_loss, train_accuracy, valid_accuracy))
 
         if (i + 1) % save_epochs == 0:
-            model_filename = SUDOKU_PATH + "/models/{}_{}.mdl".format(model_name, i + 1)
-            train_data_filename = SUDOKU_PATH + "/pickles/{}.pkl".format(model_name)
+            model_filename = "./checkpoints/epoch_{}.mdl".format(i + 1)
+            train_data_filename = "./logs/training.pkl"
             print("Saving model to {}".format(model_filename))
             torch.save(model.state_dict(), model_filename)
             with open(train_data_filename, 'wb') as f:
@@ -155,9 +171,7 @@ def train_rrn(hyperparameters: dict, data: dict):
                              'valid_losses': valid_losses,
                              'valid_accuracies': valid_accuracies,
                              'times': times}, f)
-            test_loss, test_accuracy = get_performance(model, test_x, test_y, num_iters)
-            test_loss = round(float(test_loss), 3)
-            test_accuracy = round(np.mean(test_accuracy[:, -1]), 3)
-            print("TeLoss {}\t| TeAcc {}".format(test_loss, test_accuracy))
-
+    model_filename = "./model.mdl"
+    print("Saving model to {}".format(model_filename))
+    torch.save(model.state_dict(), model_filename)
     return model
