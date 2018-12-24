@@ -26,7 +26,10 @@ np.random.seed(0)
 torch.manual_seed(0)
 torch.set_default_tensor_type('torch.DoubleTensor')
 
-def get_puzzles_by_hints(shuffled_puzzles_filename, num_hints=None):
+def get_puzzles_by_hints(shuffled_puzzles_filename=None, num_hints=None):
+    if shuffled_puzzles_filename is None:
+        shuffled_puzzles_filename = SUDOKU_PATH + '/data/shuffled_puzzles.txt'
+
     with open(shuffled_puzzles_filename) as f:
         lines = f.read().splitlines()
     all_puzzles = {}
@@ -67,7 +70,28 @@ def get_performance(model, x, y, num_iters=32):
     accuracies = torch.sum(torch.argmax(predictions, dim=3) == y, dim=2).permute(1, 0)
     return loss, accuracies.cpu().data.numpy()
 
-def train_rrn(hyperparameters: dict, data: dict):
+
+def train_rrn(hyperparameters: dict,
+              train_inputs: list,
+              train_outputs: list,
+              other_inputs: dict=None,
+              other_outputs: dict=None):
+    """
+    :param hyperparameters: Check below for what fields must exist in hyperparameters
+    :param train_inputs: list of GridStrings
+    :param train_outputs: list of GridStrings, corresponding in index to train_inputs
+    :param other_inputs: dictionary of GridStrings where the key is name of the dataset
+    :param other_outputs: dictionary of GridStrings where the key is name of the dataset,
+        corresponding in index to inputs of same name
+    :return:
+    """
+
+    if other_inputs is None:
+        other_inputs = {}
+    if other_outputs is None:
+        other_outputs = {}
+    assert set(other_inputs.keys()) == set(other_outputs.keys())
+
     if not os.path.exists('./checkpoints'):
         os.makedirs('./checkpoints')
     if not os.path.exists('./logs'):
@@ -77,8 +101,6 @@ def train_rrn(hyperparameters: dict, data: dict):
     dim_x = hyperparameters['dim_x']
     dim_y = hyperparameters['dim_y']
     num_iters = hyperparameters['num_iters']
-    train_size = hyperparameters['train_size']
-    valid_size = hyperparameters['valid_size']
     batch_size = hyperparameters['batch_size']
     epochs = hyperparameters['epochs']
     save_epochs = hyperparameters['save_epochs']
@@ -87,29 +109,23 @@ def train_rrn(hyperparameters: dict, data: dict):
     learning_rate = hyperparameters['learning_rate']
     weight_decay = hyperparameters['weight_decay']
 
-    train_inputs = data['train_inputs']
-    train_outputs = data['train_outputs']
-    valid_inputs = data['valid_inputs']
-    valid_outputs = data['valid_outputs']
+    train_x = torch.stack([encode_input(p) for p in train_inputs]).cuda(device)
+    train_y = torch.stack([encode_output(p) for p in train_outputs]).cuda(device)
 
-    all_train_x = torch.stack([encode_input(p) for p in train_inputs])
-    all_train_y = torch.stack([encode_output(p) for p in train_outputs])
-    all_valid_x = torch.stack([encode_input(p) for p in valid_inputs])
-    all_valid_y = torch.stack([encode_output(p) for p in valid_outputs])
+    other_x = {}
+    other_y = {}
+    for k in other_inputs:
+        other_x[k] = torch.stack([encode_input(p) for p in other_inputs[k]]).cuda(device)
+        other_y[k] = torch.stack([encode_output(p) for p in other_outputs[k]]).cuda(device)
 
     model = RRN(dim_x=dim_x, dim_y=dim_y, embed_size=embed_size, hidden_layer_size=hidden_layer_size).cuda(device)
     optimizer = optim.Adam(model.parameters(), lr=learning_rate, weight_decay=weight_decay)
 
     train_losses = []  # epoch x batch
     train_accuracies = []  # epoch x batch x grid x timestep
-    valid_losses = []  # epoch x batch
-    valid_accuracies = []  # epoch x grid x timestep
+    other_losses = {name: [] for name in other_x}
+    other_accuracies = {name: [] for name in other_x}
     times = []
-
-    train_x = all_train_x[:train_size].cuda(device)
-    train_y = all_train_y[:train_size].cuda(device)
-    valid_x = all_valid_x[:valid_size].cuda(device)
-    valid_y = all_valid_y[:valid_size].cuda(device)
 
     def closure():
         optimizer.zero_grad()
@@ -136,16 +152,11 @@ def train_rrn(hyperparameters: dict, data: dict):
 
         train_loss = optimizer.step(closure)
         train_accuracies[-1] = np.array(train_accuracies[-1])
-        valid_loss, valid_accuracy = get_performance(model, valid_x, valid_y, num_iters)
-        valid_losses.append(float(valid_loss))
-        valid_accuracies.append(valid_accuracy)
 
-        train_accuracies[-1] = np.array(train_accuracies[-1])
-
-        train_loss = round(float(train_loss), 3)
-        train_accuracy = round(np.mean(train_accuracies[-1][:, :, -1]), 3)
-        valid_loss = round(valid_losses[-1], 3)
-        valid_accuracy = round(np.mean(valid_accuracies[-1][:, -1]), 3)
+        for name in other_x:
+            loss, accuracy = get_performance(model, other_x[name], other_y[name], num_iters)
+            other_losses[name].append(float(loss))
+            other_accuracies[name].append(accuracy)
 
         end_time_str = datetime.now().strftime("%m/%d/%Y %H:%M:%S")
         end_time = time.time()
@@ -155,9 +166,17 @@ def train_rrn(hyperparameters: dict, data: dict):
             'end_time': end_time_str,
             'runtime': runtime
         })
-        print("({}s): Iter {}\t| TrLoss {}\t| VLoss {}\t| TrAcc {}\t| VAcc {}".format(
+
+        print("duration: {}s\t iter: {}\t| loss: {}\t| accuracy: {}".format(
             round(runtime, 1),
-            i, train_loss, valid_loss, train_accuracy, valid_accuracy))
+            i,
+            round(float(train_loss), 3),
+            round(np.mean(train_accuracies[-1][:, :, -1]), 3)))
+        for name in sorted(other_x):
+            print("data: {}\t| loss: {}\t| accuracy: {}".format(
+                name,
+                round(other_losses[name][-1], 3),
+                round(np.mean(other_accuracies[name][-1][:, -1]), 3)))
 
         if (i + 1) % save_epochs == 0:
             model_filename = "./checkpoints/epoch_{}.mdl".format(i + 1)
@@ -168,8 +187,8 @@ def train_rrn(hyperparameters: dict, data: dict):
                 pickle.dump({'hyperparameters': hyperparameters,
                              'train_losses': train_losses,
                              'train_accuracies': train_accuracies,
-                             'valid_losses': valid_losses,
-                             'valid_accuracies': valid_accuracies,
+                             'other_losses': other_losses,
+                             'other_accuracies': other_accuracies,
                              'times': times}, f)
     model_filename = "./model.mdl"
     print("Saving model to {}".format(model_filename))

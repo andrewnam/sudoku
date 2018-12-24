@@ -1,5 +1,6 @@
 import numpy as np
 import pickle
+import utils
 
 
 class Dataset:
@@ -92,6 +93,12 @@ class Datasets:
 
     def __len__(self):
         return len(self.datasets)
+
+    def keys(self):
+        return utils.flatten([self.datasets[k].keys() for k in sorted(self.datasets)])
+
+    def values(self):
+        return utils.flatten([self.datasets[k].values() for k in sorted(self.datasets)])
 
     def save(self, filename):
         with open(filename, 'wb') as f:
