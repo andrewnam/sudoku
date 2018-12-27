@@ -20,10 +20,13 @@ class Solutions:
         self.refresh_solution_boards()
         self.refresh_seed_solutions()
 
-        try:
-            self.load()
-        except:
-            pass
+        self.load()
+        print("Successfully loaded from {}".format(filename))
+        # try:
+        #     self.load()
+        #     print("Successfully loaded from {}".format(filename))
+        # except:
+        #     pass
 
     def __setitem__(self, key: Board, item: Board):
         assert type(key) == Board

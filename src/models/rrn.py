@@ -42,6 +42,22 @@ def determine_edges(dim_x, dim_y):
     shape = edges.shape
     return edges.view(max_digit ** 2, shape[2])
 
+def collect_batches(outputs, iters):
+    """
+    Collects parallel-gpu batches from running forward on a DataParallel RRN model.
+    If x and y are both of shape (n, c) where n = number of puzzles and c = number of cells,
+     a forward pass with iters iterations will return a tensor of shape (iters, n, c, max_digit).
+    If using DataParallel with d devices, the shape will instead be (iters*d, n/d, c, max_digit).
+    This function takes the latter and returns the former and is safe to use even when d is 1.
+    Therefore, it is advised to always call collect_batches(model(x, iters), iters).
+    This cannot be put into the forward function since it needs to wrap around the DataParallel abstraction.
+
+    :param outputs: Tensor of shape (iters*d, n/d, c, max_digit)
+    :param iters: Number of iters when running forward
+    :return: Tensor of shape (iters, n, c, max_digit)
+    """
+    return torch.cat([outputs[i:i + iters] for i in range(0, len(outputs), iters)], dim=1)
+
 
 class RRN(nn.Module):
     def __init__(self, dim_x, dim_y, embed_size=16, hidden_layer_size=96):
@@ -93,6 +109,8 @@ class RRN(nn.Module):
         H = X.clone().detach().cuda(device)
         g_lstm_h = H.view(lstm_layer_shape)
         g_lstm_c = torch.randn(lstm_layer_shape).cuda(device)
+
+        self.g_lstm.flatten_parameters()
 
         outputs = torch.empty(iters, batch_size, num_nodes, self.max_digit).cuda(device)
         for i in range(iters):
