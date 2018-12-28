@@ -14,6 +14,7 @@ Note that a valid GridString is of the format r.c.xxxxxxxx where
 import numpy as np
 import itertools
 import re
+from board import Board
 
 class GridString:
 
@@ -28,6 +29,7 @@ class GridString:
 
         self._array = None
         self._is_seed = None
+        self._board = None
 
     @property
     def max_digit(self):
@@ -65,6 +67,15 @@ class GridString:
     @property
     def grid_string(self):
         return '.'.join((str(self.dim_x), str(self.dim_y), self.grid))
+
+    @property
+    def board(self):
+        if self._board is not None:
+            return self._board
+        self._board = Board(self.dim_x, self.dim_y)
+        self._board.board = np.array(self.array)
+        self._board.reset_pencil_marks()
+        return self._board
 
 
     def traverse_grid(self):

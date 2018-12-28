@@ -2,7 +2,9 @@ from board import Board
 import random
 import numpy as np
 from tqdm import tqdm
-
+from grid_string import GridString
+from Dict import Dict
+import utils
 
 class Solutions:
     MEMORY_ONLY = "__MEMORY_ONLY__"
@@ -102,13 +104,13 @@ class Solutions:
             k, v = line.split(',')
             puzzle_boards[k] = v
             if k == v:
-                solution_boards[k] = Board.loadFromString(k)
+                solution_boards[k] = GridString(k).board
 
         for k, v in puzzle_boards.items():
             if v == '':
-                self.solutions[Board.loadFromString(k)] = None
+                self.solutions[GridString(k).board] = None
             else:
-                self.solutions[Board.loadFromString(k)] = solution_boards[v]
+                self.solutions[GridString(k).board] = solution_boards[v]
         self.refresh_solution_boards()
         self.refresh_seed_solutions()
         return self
@@ -131,6 +133,26 @@ class Solutions:
             randint = np.random.choice(np.arange(len(seeds)), p=weight_list)
             return seeds[randint]
         return random.sample(self.seed_solutions, 1)[0]
+
+    def get_num_puzzles_per_hint(self):
+        """
+        :return: A dictionary
+         { seed_solution: {num_hint: num_puzzles} }
+        """
+        counts = Dict(int, 2)
+        for p, s in self.solutions.items():
+            if s in self.seed_solutions:
+                num_hints = p.count_filled_cells()
+                counts[s][num_hints] += 1
+        return counts
+
+    def get_min_puzzle_seed_solution(self):
+        counts = self.get_num_puzzles_per_hint()
+        min_hints = min(utils.flatten([v.keys() for v in counts.values()]))
+        min_hint_counts = {k: v[min_hints] for k, v in counts.items()}
+        min_board = min(min_hint_counts, key=lambda k: min_hint_counts[k])
+        return min_board
+
 
     def find_all_solutions(self, board: Board) -> set:
         """

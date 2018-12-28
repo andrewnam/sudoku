@@ -66,12 +66,12 @@ class Board:
                                     re.sub('[^0-9]', '', np.array_str(self.board)))
 
     @staticmethod
-    def loadFromString(s: str):
+    def load_from_string(s: str):
         dim_x, dim_y, digits = s.split('.')
         board = Board(int(dim_x), int(dim_y))
         board.board = (np.fromstring(digits, dtype=np.int8, sep='') - 48)\
             .reshape((board.max_digit, board.max_digit))
-        board.resetPencilMarks()
+        board.reset_pencil_marks()
         return board
 
 
@@ -168,7 +168,7 @@ class Board:
         self.board[x][y] = digit
         self.setPencilMarks(x, y)
 
-    def resetPencilMarks(self):
+    def reset_pencil_marks(self):
         """
         Evaluates the current board state and returns appropriate pencilMarks
         Only useful when a board is newly loaded

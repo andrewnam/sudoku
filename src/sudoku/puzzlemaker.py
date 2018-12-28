@@ -8,15 +8,24 @@ from datetime import datetime
 from board import Board
 from solutions import Solutions
 import utils
+from utils import print
 
 
 def generate_new_puzzle(board: Board, solutions: Solutions):
-    new_puzzles = remove_cell(board, solutions, cells_to_remove=1)
+    print("Generating new puzzles for {}".format(board.stringify()))
+    new_puzzles = [board]
+    # new_puzzles = remove_cell(board, solutions, cells_to_remove=1)
+    # new_puzzles = {p for p in new_puzzles if solutions[p]}
     while new_puzzles:
         new_board = random.sample(new_puzzles, 1)[0]
+        print("Generating puzzles from {}: {}".format(new_board.stringify(), solutions[new_board].stringify()))
         new_puzzles = remove_cell(new_board, solutions, cells_to_remove=1)
+        new_puzzles = {p for p in new_puzzles if solutions[p]}
+        for p in new_puzzles:
+            print(p.stringify())
+
     # currently does nothing to check if the final resulting puzzle already exists
-    # This is a hard problem since 'parent' boards should be allowed to already exists in solutions.
+    # This is a hard problem since 'parent' boards should be allowed to already exist in solutions.
     return new_board if new_board != board else None
 
 
@@ -43,7 +52,7 @@ def remove_cell(board: Board, solutions: Solutions, cells_to_remove: int=0) -> l
         # remove is a relatively expensive step (Still O(1)). Can short circuited for checking if the board
         # already exists in solutions, but b/c of the way hashing works, not quite so simple to
         # implement. Might be worth doing in the future.
-        if new_board in solutions and solutions[new_board] or len(solutions.find_all_solutions(new_board)) == 1:
+        if (new_board in solutions and solutions[new_board]) or len(solutions.find_all_solutions(new_board)) == 1:
             new_puzzles.append(new_board)
             if cells_to_remove and len(new_puzzles) >= cells_to_remove:
                 return new_puzzles
@@ -77,6 +86,6 @@ if __name__ == '__main__':
         solutions.find_all_solutions(board)
 
     for i in tqdm(range(args.puzzles)):
-        sol = solutions.get_random_seed_solution(inverse_weight=True)
+        sol = solutions.get_min_puzzle_seed_solution()
         generate_new_puzzle(sol, solutions)
     solutions.save()

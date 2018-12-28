@@ -34,3 +34,4 @@ def get_tensor_memory_size(tensor):
 
 def get_gpu_memory(device):
     return cutorch.memory_allocated(device) // (2**20)
+
