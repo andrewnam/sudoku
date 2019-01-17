@@ -12,13 +12,11 @@ from utils import print
 
 
 def generate_new_puzzle(board: Board, solutions: Solutions):
-    print("Generating new puzzles for {}".format(board.stringify()))
     new_puzzles = [board]
     # new_puzzles = remove_cell(board, solutions, cells_to_remove=1)
     # new_puzzles = {p for p in new_puzzles if solutions[p]}
     while new_puzzles:
         new_board = random.sample(new_puzzles, 1)[0]
-        print("Generating puzzles from {}: {}".format(new_board.stringify(), solutions[new_board].stringify()))
         new_puzzles = remove_cell(new_board, solutions, cells_to_remove=1)
         new_puzzles = {p for p in new_puzzles if solutions[p]}
         for p in new_puzzles:
