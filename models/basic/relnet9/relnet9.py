@@ -8,6 +8,7 @@ Relnet6: Batchsize = 1200 (no batch, basically).
 Relnet7: Reduce nuymber of layers by 1 for each MLP again.
         This means the network has no nonlinearities.
 Relnet8: Reduces epochs to 200. Output_dim = max_digit + 1
+Relnet9: Eliminate the prob_form
 """
 
 SUDOKU_PATH = '/home/ajhnam/sudoku'
@@ -46,6 +47,7 @@ class RelNet(nn.Module):
         self.edges = sudoku_model_utils.determine_edges(dim_x, dim_y)
 
         self.embed_layer = nn.Embedding(self.max_digit+1, self.embed_size)
+        self.prob_mlp = MLP([self.embed_size, self.max_digit])
         self.embed_mlp = MLP([self.embed_size + self.max_digit+1, self.hidden_layer_size])
         self.rel_layer = RelationalLayer([self.hidden_layer_size, self.hidden_layer_size], self.edges)
         self.decode_mlp = MLP([self.hidden_layer_size, self.max_digit+1])

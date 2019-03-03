@@ -7,8 +7,7 @@ A useful feature is mirroring the transformations of one ShuffledGrid onto anoth
 a puzzle and solution grid can be tracked together
 """
 
-
-from grid_string import GridString
+from grid import Grid
 from enum import Enum
 import numpy as np
 
@@ -17,7 +16,7 @@ Rotations = Enum('Rotation', '0 90 180 270')
 
 
 class ShuffledGrid:
-    def __init__(self, parent_grid_string: GridString,
+    def __init__(self, parent_grid: Grid,
                  labels=None,
                  stacks=None,
                  bands=None,
@@ -25,9 +24,8 @@ class ShuffledGrid:
                  rows=None,
                  reflection=False,
                  rotation=None):
-        assert parent_grid_string.is_seed
 
-        self.parent_grid_string = parent_grid_string
+        self.parent_grid = parent_grid
         self.labels = labels
         self.stacks = stacks
         self.bands = bands
@@ -36,17 +34,17 @@ class ShuffledGrid:
         self.reflection = reflection
         self.rotation = rotation
 
-        self._grid_string = None
+        self._grid = None
 
     @property
-    def grid_string(self):
-        if self._grid_string is None:
-            self._grid_string = self.parent_grid_string.copy()
+    def grid(self):
+        if self._grid is None:
+            self._grid = self._grid.copy()
 
             if self.labels:
                 self.relabel()
 
-        return self._grid_string
+        return self._grid
 
     def mirror(self, other):
         self.labels = other.labels
@@ -64,4 +62,4 @@ class ShuffledGrid:
         self.labels[0] = 0
         assert set(self.labels) == set(self.labels.values()) == set(range(len(self.labels)))
 
-        self._grid_string.array = np.vectorize(lambda x: self.labels[x])(self.parent_grid_string.array)
+        self.grid._array = np.vectorize(lambda x: self.labels[x])(self.parent_grid_string.array)
