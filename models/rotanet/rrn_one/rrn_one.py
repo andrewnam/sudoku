@@ -16,13 +16,14 @@ model = RRN(dim_x=2, dim_y=2, mlp_layers=1, embed_size=6, hidden_layer_size=32).
 solver = Solver(model, '.')
 solver.train_inputs = puzzles[0].get_input_data(train_n)
 solver.train_outputs = puzzles[0].get_output_data(train_n)
+solver.other_inputs['zero_1'] = puzzles[0].get_input_data(train_n, train_n + valid_n)
+solver.other_outputs['zero_1'] = puzzles[0].get_output_data(train_n, train_n + valid_n)
 solver.other_inputs['one_1'] = puzzles[1].get_input_data(valid_n)
-solver.other_outputs['one_1'] = puzzles[1].get_input_data(valid_n)
+solver.other_outputs['one_1'] = puzzles[1].get_output_data(valid_n)
 solver.other_inputs['two_1'] = puzzles[2].get_input_data(valid_n)
-solver.other_outputs['two_1'] = puzzles[2].get_input_data(valid_n)
+solver.other_outputs['two_1'] = puzzles[2].get_output_data(valid_n)
 solver.other_inputs['three_1'] = puzzles[3].get_input_data(valid_n)
-solver.other_outputs['three_1'] = puzzles[3].get_input_data(valid_n)
+solver.other_outputs['three_1'] = puzzles[3].get_output_data(valid_n)
 
 solver.device = device
 solver.train()
-

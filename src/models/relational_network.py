@@ -33,13 +33,12 @@ def determine_edges(dim_x, dim_y):
 
 class RelationalLayer(nn.Module):
 
-    def __init__(self, layer_sizes, edges):
+    def __init__(self, layer_sizes, edges, dim):
         """
         A module for relational networks.
-        Assumes that the input is of shape (N, a, b) where
-            N = batch size
-            a = number of relational objects in a single input item
-            b = representation layer size for each relational object
+        Assumes that the input is of shape (..., A, ..., B) where
+            A = number of relational objects in a single input item
+            B = vector of length layer_sizes[0]
         :param layer_sizes: Similar to MLP
         :param edges: a 2-d list of shape (a, n) where
             a = number of relational objects in a single input item
@@ -47,28 +46,73 @@ class RelationalLayer(nn.Module):
 
             the i_th entry is a list of other cells' indices that
             object i shares a house with
+        :param dim: the dimension that the relationship edges are based on,
+            i.e. dimension of A
         """
 
         super(RelationalLayer, self).__init__()
         self.layer_sizes = layer_sizes[:]
         self.edges = edges
+        self.dim = dim
 
         self.layer_sizes[0] *= 2
         self.mlp = MLP(self.layer_sizes)
 
     def forward(self, x):
-        device = x.get_device() if x.is_cuda else None
+        permutation = list(range(len(x.shape)))
+        permutation[self.dim] = 0
+        permutation[0] = self.dim
+        x = x.permute(permutation)
 
-        M = torch.empty(x.shape[0], x.shape[1], self.layer_sizes[-1])
-        if device is not None:
-            M = M.cuda(device)
+        M = torch.empty(x.shape[:-1] + (self.layer_sizes[-1],))
+        if x.is_cuda:
+            M = M.cuda(x.get_device())
 
         for i in range(len(self.edges)):
-            msgs = [self.mlp(torch.cat([x[:, i, :], x[:, other, :]], dim=1)) for other in self.edges[i]]
-            msgs = torch.stack(msgs, dim=1)
-            M[:, i, :] = torch.sum(msgs, dim=1)
+            msgs = [self.mlp(torch.cat([x[i, ..., :], x[other, ..., :]], dim=-1)) for other in self.edges[i]]
+            msgs = torch.stack(msgs, dim=0)
+            M[i, ..., :] = torch.sum(msgs, dim=0)
 
-        return M
+        return M.permute(permutation)
+
+# class RelationalLayer(nn.Module):
+#
+#     def __init__(self, layer_sizes, edges):
+#         """
+#         A module for relational networks.
+#         Assumes that the input is of shape (N, a, b) where
+#             N = batch size
+#             a = number of relational objects in a single input item
+#             b = representation layer size for each relational object
+#         :param layer_sizes: Similar to MLP
+#         :param edges: a 2-d list of shape (a, n) where
+#             a = number of relational objects in a single input item
+#             n = number of neighbors that the object relates with.
+#
+#             the i_th entry is a list of other cells' indices that
+#             object i shares a house with
+#         """
+#
+#         super(RelationalLayer, self).__init__()
+#         self.layer_sizes = layer_sizes[:]
+#         self.edges = edges
+#
+#         self.layer_sizes[0] *= 2
+#         self.mlp = MLP(self.layer_sizes)
+#
+#     def forward(self, x):
+#         device = x.get_device() if x.is_cuda else None
+#
+#         M = torch.empty(x.shape[0], x.shape[1], self.layer_sizes[-1])
+#         if device is not None:
+#             M = M.cuda(device)
+#
+#         for i in range(len(self.edges)):
+#             msgs = [self.mlp(torch.cat([x[:, i, :], x[:, other, :]], dim=1)) for other in self.edges[i]]
+#             msgs = torch.stack(msgs, dim=1)
+#             M[:, i, :] = torch.sum(msgs, dim=1)
+#
+#         return M
 
 
 class RRN(nn.Module):
@@ -86,8 +130,8 @@ class RRN(nn.Module):
         self.embed_layer = nn.Embedding(self.max_digit + 1, self.embed_size)
         self.input_mlp = MLP([self.embed_size] + [self.hidden_layer_size]*self.mlp_layers)
 
-        self.rel_layer = RelationalLayer([self.hidden_layer_size]*(self.mlp_layers+1),
-                                         self.edges)
+        self.rel_layer = RelationalLayer([self.hidden_layer_size]*(self.mlp_layers+1), dim=1,
+                                         edges=self.edges)
         self.g_mlp = MLP([2 * self.hidden_layer_size] + [self.hidden_layer_size]*self.mlp_layers)
         self.g_lstm = nn.LSTM(self.hidden_layer_size, self.hidden_layer_size)
         self.r = MLP([self.hidden_layer_size]*self.mlp_layers + [self.max_digit])

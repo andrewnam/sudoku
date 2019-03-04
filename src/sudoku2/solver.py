@@ -116,8 +116,6 @@ class Solver:
             assert len(self.other_inputs[k]) == len(self.other_outputs[k])
 
     def prepare_data(self, input, output):
-        # input = one_hot_encode(torch.stack([encode_grid_string(GridString.load(s)) for s in input]))
-        # input = utils.one_hot_encode(torch.stack([encode_grid_string(GridString.load(s)) for s in input]))
         input = torch.stack([encode_grid_string(GridString.load(s)) for s in input]).type(torch.long)
         output = torch.stack([encode_grid_string(GridString.load(s)) for s in output]).type(torch.long) - 1
         if self.device is not None:
