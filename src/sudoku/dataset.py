@@ -91,6 +91,9 @@ class Datasets:
                 all_outputs[i] += outputs[i]
         return all_inputs, all_outputs
 
+    def __getitem__(self, item):
+        return self.datasets[item]
+
     def __len__(self):
         return len(self.datasets)
 

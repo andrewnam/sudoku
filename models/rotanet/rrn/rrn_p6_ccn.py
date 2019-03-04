@@ -12,10 +12,12 @@ train_outputs = puzzles6.get_output_data(train_n)
 validation_inputs = puzzles6.get_input_data(train_n, train_n + test_n)
 validation_outputs = puzzles6.get_output_data(train_n, train_n + test_n)
 
-model = RRN(dim_x=2, dim_y=2, mlp_layers=1, embed_size=6, hidden_layer_size=32)
+device = 1
+model = RRN(dim_x=2, dim_y=2, mlp_layers=1, embed_size=6, hidden_layer_size=32).cuda(device)
 solver = Solver(model, '.')
 solver.train_inputs = train_inputs
 solver.train_outputs = train_outputs
 solver.other_inputs['validation'] = validation_inputs
 solver.other_outputs['validation'] = validation_outputs
+solver.device = device
 solver.train()
