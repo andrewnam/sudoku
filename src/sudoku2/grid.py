@@ -1,5 +1,9 @@
 import numpy as np
 from .house import House, HouseType
+from .exceptions import InvalidWriteException
+import joblib
+import re
+
 
 class Grid:
 
@@ -7,22 +11,81 @@ class Grid:
         self.dim_x = dim_x
         self.dim_y = dim_y
         self.max_digit = self.dim_x * self.dim_y
-        self.array = np.zeros((self.max_digit, self.max_digit))
-        self.rows = tuple([House(self.array, HouseType.Row, i, self.dim_x, self.dim_y)
+        self.array = np.zeros((self.max_digit, self.max_digit), dtype=int)
+        self.pencil_marks = np.ones((self.max_digit, self.max_digit, self.max_digit))
+        self.rows = tuple([House(self.array, self.pencil_marks, HouseType.Row, i, self.dim_x, self.dim_y)
                         for i in range(self.max_digit)])
-        self.columns = tuple([House(self.array, HouseType.Column, i, self.dim_x, self.dim_y)
+        self.columns = tuple([House(self.array, self.pencil_marks, HouseType.Column, i, self.dim_x, self.dim_y)
                         for i in range(self.max_digit)])
-        self.boxes = tuple([House(self.array, HouseType.Box, i, self.dim_x, self.dim_y)
+        self.boxes = tuple([House(self.array, self.pencil_marks, HouseType.Box, i, self.dim_x, self.dim_y)
                         for i in range(self.max_digit)])
+
+    @property
+    def num_filled_cells(self):
+        return np.sum(self.array != 0)
+
+    @property
+    def num_unfilled_cells(self):
+        return np.sum(self.array == 0)
+
+    @property
+    def complete(self):
+        return self.num_unfilled_cells == 0
+
+    @property
+    def is_solvable(self):
+        """
+        Checks if the board has any unfilled cells that have no candidates
+        """
+        return not np.any((self.array == 0) & (np.sum(self.pencil_marks, axis=2) == 0))
+
+    def to_grid_string(self):
+        s = re.sub('[^0-9]', '', np.array_str(self.array))
+        return GridString(self.dim_x, self.dim_y, s)
+
+    def copy(self):
+        grid = Grid(self.dim_x, self.dim_y)
+        np.copyto(grid.array, self.array)
+        np.copyto(grid.pencil_marks, self.pencil_marks)
+        return grid
+
+    def is_candidate(self, x, y, digit):
+        return self.pencil_marks[x][y][digit-1]
+
+    def set_pencil_marks(self, x, y):
+        digit = self.array[x][y]
+        if digit:
+            self.rows[x].erase_pencil_marks(digit)
+            self.columns[y].erase_pencil_marks(digit)
+            self.box_containing(x, y).erase_pencil_marks(digit)
+
+    def write(self, x, y, digit):
+        if self.is_candidate(x, y, digit):
+            self.array[x][y] = digit
+            self.set_pencil_marks(x, y)
+        else:
+            raise InvalidWriteException
+
+    def box_containing(self, x, y):
+        return self.boxes[(x // self.dim_x) * self.dim_x + (y // self.dim_y)]
+
+    def get_candidates(self, x, y):
+        return np.nonzero(self.pencil_marks[x][y])[0] + 1
 
     def __getitem__(self, index):
-        return self.array[index]
+        return np.array(self.array[index])
 
-    def __setitem__(self, key, value):
-        self.array[key] = value
+    def __eq__(self, other):
+        return np.all(self.array == other.array)
+
+    def __lt__(self, other):
+        return self.__repr__() < other.__repr__()
 
     def __repr__(self):
         return self.array.__repr__()
+
+    def __hash__(self):
+        return joblib.hash(self.array).__hash__()
 
 
 class GridString:
@@ -39,6 +102,20 @@ class GridString:
     @property
     def num_hints(self):
         return len(self.grid_string) - self.grid_string.count('.')
+
+    def to_grid(self):
+        grid = Grid(self.dim_x, self.dim_y)
+        digits =(self.traverse_grid)
+
+        max_digit = self.dim_y * self.dim_y
+        i = 0
+        print(grid.array)
+        for x in range(max_digit):
+            for y in range(max_digit):
+                print(i, x, y, digits[i], grid.array)
+                grid.array[x][y] = digits[i]
+                i += 1
+        return grid
 
     def traverse_grid(self):
         """
@@ -63,7 +140,7 @@ class GridString:
         dim_y = int(a[1])
         grid_string = a[2]
         return GridString(dim_x, dim_y, grid_string)
-        
+
 
     @staticmethod
     def load_old_format(s: str):
@@ -76,6 +153,15 @@ class GridString:
         dim_y = int(s[dot_index+1:dot_index2])
         grid_string = s[dot_index2+1:]
         return GridString(dim_x, dim_y, grid_string)
+
+    def __eq__(self, other):
+        return self.dim_x == other.dim_x and self.dim_y == other.dim_y and self.grid_string == other.grid_string
+
+    def __lt__(self, other):
+        return self.grid_string < other.grid_string
+
+    def __hash__(self):
+        return str(self).__hash__()
 
     def __repr__(self):
         return f"{self.dim_x}_{self.dim_y}_{self.grid_string}"

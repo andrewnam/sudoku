@@ -80,8 +80,10 @@ if __name__ == '__main__':
         board = Board(args.dim_x, args.dim_y)
         for i in range(args.dim_x * args.dim_y):
             board.write(0, i, i + 1)
+        print("Finding solutions")
         solutions.find_all_solutions(board)
 
+    print("Beginning sequence")
     for i in tqdm(range(args.puzzles)):
         sol = solutions.get_min_puzzle_seed_solution()
         generate_new_puzzle(sol, solutions)

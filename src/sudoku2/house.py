@@ -1,11 +1,13 @@
 import numpy as np
 import utils
+from .exceptions import InvalidEnumException
 from enum import Enum
 HouseType = Enum('HouseType', 'Row, Column, Box')
 
 class House:
 
     def __init__(self, grid: np.ndarray,
+                        pencil_marks: np.ndarray,
                         type: HouseType,
                         index: int,
                         dim_x=3, dim_y=3):
@@ -20,17 +22,22 @@ class House:
             self.y_min = 0
             self.y_max = self.max_digit-1
             self.array = grid[self.x_min]
+            self.pencil_marks = pencil_marks[self.x_min]
         elif self.type == HouseType.Column:
             self.y_min = self.y_max = index
             self.x_min = 0
             self.x_max = self.max_digit-1
-            self.array = grid[:,self.y_min]
+            self.array = grid[:, self.y_min]
+            self.pencil_marks = pencil_marks[:, self.y_min]
         elif self.type == HouseType.Box:
             self.x_min = (self.index//self.dim_x)*self.dim_x
             self.y_min = (self.index*self.dim_y)%self.max_digit
             self.x_max = self.x_min + self.dim_x - 1
             self.y_max = self.y_min + self.dim_y - 1
             self.array = grid[self.x_min:self.x_max+1, self.y_min:self.y_max+1]
+            self.pencil_marks = pencil_marks[self.x_min:self.x_max+1, self.y_min:self.y_max+1]
+        else:
+            raise InvalidEnumException('type', HouseType, type)
 
     def __getitem__(self, index):
         return self.array[index]
@@ -40,11 +47,14 @@ class House:
 
     def set(self, value: np.ndarray):
         assert self.array.shape == value.shape
-        self.array[:] = value
+        self.array[...] = value
 
     def get_coordinates(self):
         combinations = utils.get_combinations(range(self.x_min, self.x_max + 1), range(self.y_min, self.y_max + 1))
         return {tuple(c) for c in combinations}
+
+    def erase_pencil_marks(self, digit):
+        self.pencil_marks[..., digit-1] = np.zeros(self.max_digit).reshape(self.array.shape)
 
     def __repr__(self):
         return "{} {}\n{}".format(self.type, self.index, self.array.__repr__())
