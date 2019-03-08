@@ -55,6 +55,7 @@ class Grid:
     def set_pencil_marks(self, x, y):
         digit = self.array[x][y]
         if digit:
+            self.pencil_marks[x][y] = np.zeros(self.max_digit)
             self.rows[x].erase_pencil_marks(digit)
             self.columns[y].erase_pencil_marks(digit)
             self.box_containing(x, y).erase_pencil_marks(digit)
@@ -64,7 +65,33 @@ class Grid:
             self.array[x][y] = digit
             self.set_pencil_marks(x, y)
         else:
-            raise InvalidWriteException
+            raise InvalidWriteException(x, y, digit, self.pencil_marks[x][y])
+
+    def contradiction_exists(self, x, y, digit):
+        assert self.array[x][y] != digit
+        return (digit in self.rows[x]) or (digit in self.columns[y]) or (digit in self.box_containing(x, y))
+
+    def remove(self, x, y, in_place=True):
+        grid = self if in_place else self.copy()
+        digit = grid.array[x][y]
+        assert digit > 0
+        grid.array[x][y] = 0
+
+        # for cell at (x, y)
+        f = lambda d: not self.contradiction_exists(x, y, d)
+        grid.pencil_marks[x][y] = np.vectorize(f)(np.arange(self.max_digit) + 1)
+
+        # for all other cells in neighborhood
+        neighbors = self.rows[x].get_coordinates()
+        neighbors |= self.columns[y].get_coordinates()
+        neighbors |= self.box_containing(x,y).get_coordinates()
+        neighbors.remove((x, y))
+
+        for x, y in neighbors:
+            grid.pencil_marks[x][y][digit-1] = not self.contradiction_exists(x, y, digit)
+
+        return None if in_place else grid
+
 
     def box_containing(self, x, y):
         return self.boxes[(x // self.dim_x) * self.dim_x + (y // self.dim_y)]
@@ -109,10 +136,8 @@ class GridString:
 
         max_digit = self.dim_y * self.dim_y
         i = 0
-        print(grid.array)
         for x in range(max_digit):
             for y in range(max_digit):
-                print(i, x, y, digits[i], grid.array)
                 grid.array[x][y] = digits[i]
                 i += 1
         return grid

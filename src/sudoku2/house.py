@@ -39,15 +39,14 @@ class House:
         else:
             raise InvalidEnumException('type', HouseType, type)
 
-    def __getitem__(self, index):
-        return self.array[index]
+    def as_1d(self):
+        a = self.array.view()
+        a.shape = self.max_digit
+        return a
 
-    def __setitem__(self, key, value):
-        self.array[key] = value
-
-    def set(self, value: np.ndarray):
-        assert self.array.shape == value.shape
-        self.array[...] = value
+    def digit_pencil_marks(self, digit):
+        pm = self.pencil_marks.reshape(self.max_digit, self.max_digit)
+        return pm[:,digit-1]
 
     def get_coordinates(self):
         combinations = utils.get_combinations(range(self.x_min, self.x_max + 1), range(self.y_min, self.y_max + 1))
@@ -55,6 +54,19 @@ class House:
 
     def erase_pencil_marks(self, digit):
         self.pencil_marks[..., digit-1] = np.zeros(self.max_digit).reshape(self.array.shape)
+
+    def set(self, value: np.ndarray):
+        assert self.array.shape == value.shape
+        self.array[...] = value
+
+    def __getitem__(self, index):
+        return self.array[index]
+
+    def __setitem__(self, key, value):
+        self.array[key] = value
+
+    def __contains__(self, item):
+        return item in self.array
 
     def __repr__(self):
         return "{} {}\n{}".format(self.type, self.index, self.array.__repr__())
