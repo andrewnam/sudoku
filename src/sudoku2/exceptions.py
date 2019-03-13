@@ -12,3 +12,7 @@ class InvalidWriteException(Exception):
         self.digit = digit
         self.pencilmarks = pencilmarks
         self.message = f"Cannot write {digit} to ({x}, {y}). Pencilmarks: {pencilmarks}"
+
+class SolutionsVerificationException(Exception):
+    def __init__(self, grid, message):
+        self.message = f"{message}\n{str(grid)}"

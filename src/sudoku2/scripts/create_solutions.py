@@ -1,10 +1,10 @@
 from sudoku2 import Grid, GridString
-from sudoku2.solver import solve
+from sudoku2.solver.csp_solver import solve
 from tqdm import tqdm
 
 dim_x = 2
-dim_y = 2
-num_solutions = 5
+dim_y = 3
+num_solutions = 1
 filename = f"{dim_x}x{dim_y}solutions.txt"
 
 max_digit = dim_x * dim_y

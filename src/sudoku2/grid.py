@@ -20,6 +20,7 @@ class Grid:
         self.boxes = tuple([House(self.array, self.pencil_marks, HouseType.Box, i, self.dim_x, self.dim_y)
                         for i in range(self.max_digit)])
 
+    # region properties
     @property
     def num_filled_cells(self):
         return np.sum(self.array != 0)
@@ -33,24 +34,48 @@ class Grid:
         return self.num_unfilled_cells == 0
 
     @property
+    def valid(self):
+        for i in range(self.max_digit):
+            k, v = np.unique(self.rows[i].array, return_counts=True)
+            if not (v[k[0] == 0:] <= 1).all():
+                return False
+            k, v = np.unique(self.columns[i].array, return_counts=True)
+            if not (v[k[0] == 0:] <= 1).all():
+                return False
+            k, v = np.unique(self.boxes[i].array, return_counts=True)
+            if not (v[k[0] == 0:] <= 1).all():
+                return False
+        return True
+
+    @property
+    def solved(self):
+        return self.complete and self.valid
+
+    @property
     def is_solvable(self):
         """
         Checks if the board has any unfilled cells that have no candidates
         """
         return not np.any((self.array == 0) & (np.sum(self.pencil_marks, axis=2) == 0))
 
+    @property
+    def is_seed(self):
+        return (self.array[0] == np.arange(self.array.shape[1]) + 1).all()
+
+    # endregion
+
+    def box_containing(self, x, y):
+        return self.boxes[(x // self.dim_x) * self.dim_x + (y // self.dim_y)]
+
     def to_grid_string(self):
         s = re.sub('[^0-9]', '', np.array_str(self.array))
-        return GridString(self.dim_x, self.dim_y, s)
+        return GridString(self.dim_x, self.dim_y, s.replace('0', '.'))
 
     def copy(self):
         grid = Grid(self.dim_x, self.dim_y)
         np.copyto(grid.array, self.array)
         np.copyto(grid.pencil_marks, self.pencil_marks)
         return grid
-
-    def is_candidate(self, x, y, digit):
-        return self.pencil_marks[x][y][digit-1]
 
     def set_pencil_marks(self, x, y):
         digit = self.array[x][y]
@@ -71,15 +96,14 @@ class Grid:
         assert self.array[x][y] != digit
         return (digit in self.rows[x]) or (digit in self.columns[y]) or (digit in self.box_containing(x, y))
 
-    def remove(self, x, y, in_place=True):
-        grid = self if in_place else self.copy()
-        digit = grid.array[x][y]
+    def remove(self, x, y):
+        digit = self.array[x][y]
         assert digit > 0
-        grid.array[x][y] = 0
+        self.array[x][y] = 0
 
         # for cell at (x, y)
         f = lambda d: not self.contradiction_exists(x, y, d)
-        grid.pencil_marks[x][y] = np.vectorize(f)(np.arange(self.max_digit) + 1)
+        self.pencil_marks[x][y] = np.vectorize(f)(np.arange(self.max_digit) + 1)
 
         # for all other cells in neighborhood
         neighbors = self.rows[x].get_coordinates()
@@ -88,17 +112,28 @@ class Grid:
         neighbors.remove((x, y))
 
         for x, y in neighbors:
-            grid.pencil_marks[x][y][digit-1] = not self.contradiction_exists(x, y, digit)
-
-        return None if in_place else grid
+            self.pencil_marks[x][y][digit-1] = not self.contradiction_exists(x, y, digit)
 
 
-    def box_containing(self, x, y):
-        return self.boxes[(x // self.dim_x) * self.dim_x + (y // self.dim_y)]
+    # region candidates
+    def is_candidate(self, x, y, digit):
+        return self.pencil_marks[x][y][digit-1]
 
     def get_candidates(self, x, y):
         return np.nonzero(self.pencil_marks[x][y])[0] + 1
 
+    def count_candidates(self):
+        """
+        :param grid:
+        :return: dict (x, y) -> number of candidates at (x, y)
+        """
+
+        possibilities = np.sum(self.pencil_marks, axis=2)
+        xs, ys = np.nonzero(possibilities)
+        return {(x, y): possibilities[x][y] for x, y in zip(xs, ys)}
+    # endregion
+
+    # region __ functions
     def __getitem__(self, index):
         return np.array(self.array[index])
 
@@ -113,6 +148,7 @@ class Grid:
 
     def __hash__(self):
         return joblib.hash(self.array).__hash__()
+    # endregion
 
 
 class GridString:
@@ -130,15 +166,22 @@ class GridString:
     def num_hints(self):
         return len(self.grid_string) - self.grid_string.count('.')
 
+    @property
+    def is_seed(self):
+        return self.grid_string[:self.max_digit] == ''.join((str(i) for i in range(1, self.max_digit + 1)))
+
     def to_grid(self):
         grid = Grid(self.dim_x, self.dim_y)
-        digits =(self.traverse_grid)
+        digits = list(self.traverse_grid())
 
-        max_digit = self.dim_y * self.dim_y
+        max_digit = self.dim_x * self.dim_y
         i = 0
+        # print(self.grid_string)
         for x in range(max_digit):
             for y in range(max_digit):
-                grid.array[x][y] = digits[i]
+                if digits[i]:
+                    grid.write(x, y, digits[i])
+                # grid.array[x][y] = digits[i]
                 i += 1
         return grid
 
