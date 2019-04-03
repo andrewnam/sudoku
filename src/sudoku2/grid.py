@@ -3,6 +3,7 @@ from .house import House, HouseType
 from .exceptions import InvalidWriteException
 import joblib
 import re
+import utils
 
 
 class Grid:
@@ -200,6 +201,16 @@ class GridString:
                 yield int(grid[:digit_stride])
                 grid = grid[digit_stride:]
 
+    def seed_mapping(self):
+        map = {self.grid_string[i]: str(i + 1) for i in range(self.max_digit)}
+        return map
+
+    def map_digits(self, map):
+        return GridString(self.dim_x, self.dim_y, utils.replace(self.grid_string, map))
+
+    def make_seed(self):
+        return self.map_digits(self.seed_mapping())
+
 
     @staticmethod
     def load(s: str):
@@ -222,6 +233,12 @@ class GridString:
         grid_string = s[dot_index2+1:]
         return GridString(dim_x, dim_y, grid_string)
 
+
+    @staticmethod
+    def load_array(dim_x: int, dim_y: int, a: np.ndarray):
+        s = re.sub('[^0-9]', '', np.array_str(a))
+        return GridString(dim_x, dim_y, s.replace('0', '.'))
+
     def __eq__(self, other):
         return self.dim_x == other.dim_x and self.dim_y == other.dim_y and self.grid_string == other.grid_string
 
@@ -229,7 +246,7 @@ class GridString:
         return self.grid_string < other.grid_string
 
     def __hash__(self):
-        return str(self).__hash__()
+        return (self.dim_x, self.dim_y, self.grid_string).__hash__()
 
     def __repr__(self):
         return f"{self.dim_x}_{self.dim_y}_{self.grid_string}"
