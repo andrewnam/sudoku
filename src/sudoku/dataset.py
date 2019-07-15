@@ -91,13 +91,25 @@ class Datasets:
                 all_outputs[i] += outputs[i]
         return all_inputs, all_outputs
 
+    def __getitem__(self, item):
+        return self.datasets[item]
+
     def __len__(self):
         return len(self.datasets)
 
     def keys(self):
-        return utils.flatten([self.datasets[k].keys() for k in sorted(self.datasets)])
+        return self.datasets.keys()
 
     def values(self):
+        return self.datasets.values()
+
+    def items(self):
+        return zip(self.keys(), [self.datasets[k] for k in self.keys()])
+
+    def data_keys(self):
+        return utils.flatten([self.datasets[k].keys() for k in sorted(self.datasets)])
+
+    def data_values(self):
         return utils.flatten([self.datasets[k].values() for k in sorted(self.datasets)])
 
     def save(self, filename):

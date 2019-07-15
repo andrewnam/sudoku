@@ -1,10 +1,17 @@
-from board import Board
+from .board import Board
 import random
 import numpy as np
 from tqdm import tqdm
-from grid_string import GridString
-from Dict import Dict
+from .grid_string import GridString
+from utils import Dict
+import os
 import utils
+
+import logging
+
+utils.setup_logging()
+logger = logging.getLogger(__name__)
+logger.setLevel("DEBUG")
 
 class Solutions:
     MEMORY_ONLY = "__MEMORY_ONLY__"
@@ -22,8 +29,9 @@ class Solutions:
         self.refresh_solution_boards()
         self.refresh_seed_solutions()
 
-        self.load()
-        print("Successfully loaded from {}".format(filename))
+        if os.path.isfile(self.filename):
+            self.load()
+            print("Successfully loaded from {}".format(filename))
         # try:
         #     self.load()
         #     print("Successfully loaded from {}".format(filename))
@@ -173,9 +181,11 @@ class Solutions:
             next_board.write(x, y, digit)
             if next_board in self:
                 found_solutions.add(self[next_board])
+                logger.debug(f"{board.stringify()} -> {len(found_solutions)} solutions")
             elif next_board.all_filled():
                 self[next_board] = next_board
                 found_solutions.add(self[next_board])
+                logger.debug(f"{board.stringify()} -> {len(found_solutions)} solutions")
             if next_board.is_solvable():
                 found_solutions |= self.find_all_solutions(next_board)
         if len(found_solutions) == 1:

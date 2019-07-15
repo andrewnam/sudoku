@@ -14,7 +14,8 @@ Note that a valid GridString is of the format r.c.xxxxxxxx where
 import numpy as np
 import itertools
 import re
-from board import Board
+from .board import Board
+
 
 class GridString:
 
@@ -117,7 +118,7 @@ def write_solutions_file(filename, puzzles):
         f.write('\n'.join(lines))
 
 def read_solutions_file(filename):
-    with open(filename) as f:
+    with open(filename, encoding='utf8') as f:
         lines = f.read().splitlines()
     puzzles = {}
     unique_solutions = {}

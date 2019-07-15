@@ -5,10 +5,9 @@ from tqdm import tqdm
 import argparse
 from datetime import datetime
 
-from board import Board
-from solutions import Solutions
+from sudoku import Board
+from sudoku import Solutions
 import utils
-from utils import print
 
 
 def generate_new_puzzle(board: Board, solutions: Solutions):

@@ -1,4 +1,4 @@
-from cell import Cell
+from .cell import Cell
 
 import numpy as np
 import random
