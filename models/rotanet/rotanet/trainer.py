@@ -3,7 +3,7 @@ from models import RelationalLayer, determine_edges, MLP
 from sudoku2 import Solver
 import torch
 import torch.nn as nn
-import utils
+import andrew_utils as utils
 
 
 class Rotanet(nn.Module):

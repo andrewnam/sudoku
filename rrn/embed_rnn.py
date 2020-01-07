@@ -12,7 +12,7 @@ sys.path.append(SUDOKU_PATH + '/src/sudoku')
 sys.path.append(SUDOKU_PATH + '/src/models')
 sys.path.append(SUDOKU_PATH + '/src/misc')
 
-import utils
+import andrew_utils as utils
 from dataset import Datasets
 from rrn import RRN, collect_batches, EmbedRRN
 from mlp import MLP

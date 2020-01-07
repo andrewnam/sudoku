@@ -3,9 +3,9 @@ import random
 import numpy as np
 from tqdm import tqdm
 from .grid_string import GridString
-from utils import Dict
+from andrew_utils import Dict
 import os
-import utils
+import andrew_utils as utils
 
 import logging
 

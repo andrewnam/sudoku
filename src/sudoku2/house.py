@@ -1,5 +1,5 @@
 import numpy as np
-import utils
+import andrew_utils as utils
 from .exceptions import InvalidEnumException
 from enum import Enum
 HouseType = Enum('HouseType', 'Row, Column, Box')

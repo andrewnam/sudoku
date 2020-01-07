@@ -1,6 +1,6 @@
 import numpy as np
 import pickle
-import utils
+import andrew_utils as utils
 
 
 class Dataset:

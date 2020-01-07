@@ -7,7 +7,7 @@ from datetime import datetime
 
 from sudoku import Board
 from sudoku import Solutions
-import utils
+import andrew_utils as utils
 
 
 def generate_new_puzzle(board: Board, solutions: Solutions):

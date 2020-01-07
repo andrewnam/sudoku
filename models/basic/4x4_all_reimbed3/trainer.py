@@ -19,7 +19,7 @@ sys.path.append(SUDOKU_PATH + '/src/models')
 from dataset import Datasets
 import rrn
 import rrn_utils
-import utils
+import andrew_utils as utils
 
 
 train_size_per_num_hints = 100 # * 12 = 1200

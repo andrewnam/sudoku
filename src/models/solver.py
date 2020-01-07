@@ -7,8 +7,8 @@ import torch.nn.functional as F
 import os
 from datetime import datetime
 from sudoku2.grid import GridString
-from utils import Dict
-import utils
+from andrew_utils import Dict
+import andrew_utils as utils
 import time
 import logging
 

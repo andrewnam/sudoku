@@ -2,10 +2,10 @@ import pickle
 import random
 import numpy as np
 from .grid import Grid, GridString
-from utils import Dict
+from andrew_utils import Dict
 from .exceptions import SolutionsVerificationException
 from sudoku2.solver.csp_solver import solve as csp_solve
-import utils
+import andrew_utils as utils
 from tqdm import tqdm
 
 import logging

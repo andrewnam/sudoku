@@ -8,7 +8,7 @@ sys.path.append(SUDOKU_PATH + '/src/models')
 from dataset import Datasets
 
 import rrn_utils
-from utils import print
+from andrew_utils import print
 
 # devices = [0,1,2,3,4,5,6,7,8,9]
 train_size_per_num_hints = 250 # * 12 = 3000

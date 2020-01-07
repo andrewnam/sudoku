@@ -18,8 +18,8 @@ sys.path.append(SUDOKU_PATH + '/src/models')
 
 from grid_string import GridString
 from rrn import RRN, collect_batches, ReEmbedRRN
-from utils import print
-import utils
+from andrew_utils import print
+import andrew_utils as utils
 
 # set random seed to 0
 random.seed(0)
