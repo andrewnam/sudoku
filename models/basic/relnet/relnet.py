@@ -25,7 +25,7 @@ from rrn import RRN
 from mlp import MLP
 from relational_network import RelationalLayer
 import rrn_utils
-import utils
+import andrew_utils as utils
 
 
 class RelNet(nn.Module):

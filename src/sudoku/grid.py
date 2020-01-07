@@ -1,7 +1,7 @@
 from enum import Enum
 import re
 import numpy as np
-import utils
+import andrew_utils as utils
 
 HouseType = Enum('HouseType', 'Row, Column, Box')
 

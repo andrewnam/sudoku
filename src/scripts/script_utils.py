@@ -17,7 +17,7 @@ sys.path.append(SUDOKU_PATH + '/src/models')
 
 from grid_string import GridString
 from rrn import RRN
-from utils import print
+from andrew_utils import print
 
 # set random seed to 0
 random.seed(0)

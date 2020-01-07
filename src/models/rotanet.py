@@ -2,7 +2,7 @@ import torch
 import torch.nn as nn
 from .mlp import MLP
 from .relational_network import RelationalLayer, determine_edges
-import utils
+import andrew_utils as utils
 
 class Rotanet(nn.Module):
     mask_dim = 3

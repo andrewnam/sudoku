@@ -28,7 +28,7 @@ from dataset import Datasets
 import rrn
 from mlp import MLP
 import rrn_utils
-import utils
+import andrew_utils as utils
 
 class NewRRN(nn.Module):
     def __init__(self, dim_x, dim_y, embed_size=16, hidden_layer_size=96):
